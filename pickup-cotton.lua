@@ -1,0 +1,21 @@
+// Pickup Cotton
+if insysmsg 'world is saving'
+    for 30
+        overhead 'Waiting for world save...'
+        wait 5 sec
+        if insysmsg 'save complete'
+            overhead 'Save complete - continue on!' 88
+            clearsysmsg 
+            wait 250
+            replay
+        endif
+    endfor
+elseif weight > 170
+    overhead 'weight threshold reached' 34
+    stop
+elseif findtype 'cotton' true
+    dclicktype 'cotton' true
+endif
+
+wait 1 sec
+loop
