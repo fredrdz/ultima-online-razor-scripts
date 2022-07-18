@@ -19,21 +19,21 @@ endif
 
 wait 500
 // Checks HP so we don't kill ourselves and then casts spell
-if hits > 30 and skill 'magery' > 30 and skill 'magery' < 60
+if hits >= 30 and skill 'magery' >= 30.1 and skill 'magery' <= 60
     cast 'lightning'
     waitfortarget 3000
     target 'self'
-    wait 500
-elseif hits > 40 skill 'magery' > 60 and skill 'magery' < 85
+    wait 1 sec
+elseif hits >= 40 skill 'magery' >= 60.1 and skill 'magery' <= 85
     cast 'energy bolt'
     waitfortarget 3000
     target 'self'
-    wait 500
-elseif hits > 50 skill 'magery' > 85 and skill 'magery' < 100
+    wait 1 sec
+elseif hits >= 55 skill 'magery' >= 85.1 and skill 'magery' < 100
     cast 'flamestrike'
     waitfortarget 3000
     target 'self'
-    wait 500
+    wait 1 sec
 endif
     
 for 10
@@ -60,75 +60,71 @@ for 10
                 replay
              endif
         endfor
+    elseif insysmsg "You must wait"
+        // Wait message
+        overhead 'You must wait..' 34
+        wait 2 sec
+        replay
     else
-        // Checks our HP
-        if hits < 50
+        // Health Check
+        if hits < 55
             hotkey 'bandage self'
             wait 500
-            // Try to sneak in a meditation, if fails, we don't try again
             skill 'Meditation'
-            if insysmsg "You begin"
-                while hits < 50
-                    if insysmsg "You finish"
-                        // Bandage Success Check
-                        replay
-                    elseif insysmsg "barely"
-                        // Bandage Fail Check
-                        replay
-                    elseif insysmsg "slips"
-                        // Bandage Fail Check
-                        wait 1 sec
-                    elseif insysmsg "is not damaged"
-                        // Bandage Empty Check
-                        replay
-                    elseif insysmsg "cannot be used"
-                        // Bandage Error Check
-                        overhead "Error!" 34
-                        replay
-                    endif
-                    wait 100
-                endwhile
-                clearsysmsg
-            endif
-        // Checks our mana
-        elseif mana < 20
+            // Healing sub-loop
+            for 40
+                if insysmsg "You finish"
+                    // Bandage Success Check
+                    replay
+                elseif insysmsg "barely"
+                    // Bandage Fail Check
+                    replay
+                elseif insysmsg "slips"
+                    // Bandage Fail Check
+                    wait 1 sec
+                elseif insysmsg "is not damaged"
+                    // Bandage Empty Check
+                    break
+                elseif insysmsg "cannot be used"
+                    // Bandage Error Check
+                    overhead "Error!" 34
+                    replay
+                endif
+                wait 100
+            endfor
+            clearsysmsg
+        // Mana Check
+        elseif mana <= 39 and hp >= 54
             skill 'Meditation'
-            wait 1 sec
-            if insysmsg "You enter a meditative trance"
-                // Meditation Success Check
-                overhead "Meditating, waiting for full mana..." 88
-                while mana < maxmana
-                    if insysmsg "You stop meditating"
-                        // Meditation Error Check
-                        overhead "Broke Meditation!" 34
-                        replay
-                    endif
-                    wait 100
-                endwhile
-                overhead "Full mana, continuing..." 88
-                replay
-            endif
-        elseif insysmsg "cannot focus"
-            // Meditation Fail Check
-            replay
-        elseif insysmsg "You must wait"
-            // Wait message
-            overhead 'You must wait..' 34
-            wait 1 sec
-            replay
+            // Meditation sub-loop
+            for 20
+                if insysmsg "You enter a meditative trance"
+                    // Meditation Success Check
+                    overhead "Meditating, waiting for full mana.." 88
+                    while mana < maxmana
+                        if insysmsg "You stop meditating"
+                            // Meditation Error Check
+                            overhead "Broke Meditation!" 34
+                            replay
+                        endif
+                        wait 100
+                    endwhile
+                    overhead "Full mana, continuing.." 88
+                    replay
+                elseif insysmsg "cannot focus"
+                    // Meditation Fail Check
+                    // Re-try Meditation
+                    wait 1 sec
+                    skill 'Meditation'
+                endif
+                wait 100
+            endfor
         elseif mana < maxmana
             // Spell Success Check
             replay
         endif
     endif
 endfor
-
-if insysmsg "You must wait"
-    // Wait message
-    overhead 'You must wait..' 34
-    wait 1 sec
-    replay
-endif
 
 if skill 'magery' >= 100
     overhead 'GM MAGERY, DONE.'
