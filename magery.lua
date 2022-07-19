@@ -37,7 +37,7 @@ elseif hits >= 55 skill 'magery' >= 85.1 and skill 'magery' < 100
 endif
     
 for 10
-    wait 100
+    wait 200
     if insysmsg 'world is saving'
         for 30
             overhead 'Waiting for world save...'
@@ -72,13 +72,13 @@ for 10
             wait 500
             skill 'Meditation'
             // Healing sub-loop
-            for 40
+            for 60
                 if insysmsg "You finish"
                     // Bandage Success Check
-                    replay
+                    break
                 elseif insysmsg "barely"
                     // Bandage Fail Check
-                    replay
+                    break
                 elseif insysmsg "slips"
                     // Bandage Fail Check
                     wait 1 sec
@@ -88,16 +88,17 @@ for 10
                 elseif insysmsg "cannot be used"
                     // Bandage Error Check
                     overhead "Error!" 34
-                    replay
+                    break
                 endif
                 wait 100
             endfor
             clearsysmsg
+            replay
         // Mana Check
         elseif mana <= 39 and hp >= 54
             skill 'Meditation'
             // Meditation sub-loop
-            for 20
+            for 15
                 if insysmsg "You enter a meditative trance"
                     // Meditation Success Check
                     overhead "Meditating, waiting for full mana.." 88
@@ -105,20 +106,23 @@ for 10
                         if insysmsg "You stop meditating"
                             // Meditation Error Check
                             overhead "Broke Meditation!" 34
+                            clearsysmsg
                             replay
                         endif
-                        wait 100
+                        wait 200
                     endwhile
                     overhead "Full mana, continuing.." 88
-                    replay
+                    break
                 elseif insysmsg "cannot focus"
                     // Meditation Fail Check
                     // Re-try Meditation
                     wait 1 sec
                     skill 'Meditation'
                 endif
-                wait 100
+                wait 200
             endfor
+            clearsysmsg
+            replay
         elseif mana < maxmana
             // Spell Success Check
             replay
