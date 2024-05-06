@@ -1,0 +1,124 @@
+#SCRIPT: Defense
+#Author: Talik Starr
+#IN:RISEN
+createtimer 'bhealcd'
+createtimer 'mhealcd'
+
+while not dead
+    # stop script if out of bandages
+    if count 'clean bandage%s%' == 0
+        overhead "[ZERO BANDAGES]" 33
+        stop
+    endif
+    
+    if poisoned
+        overhead '[POISONED]' 33
+        cast 'cure'
+        wft 1000
+        target 'self'
+        wait 100
+        for 10
+            if insysmsg 'You have been cured'
+                overhead '[CURED]'
+                break
+            endif
+            wait 100
+         endfor
+    endif
+    
+    if insysmsg 'You cannot move' or insysmsg 'You are frozen'
+        overhead '[PARALYZED]' 33
+        cast 'magic arrow'
+        wft 1000
+        target 'self'
+        wait 1200
+        clearsysmsg
+    endif
+
+    if diffhits >= 10 and findtype "clean bandage%s%" backpack as baids
+        if timer 'bhealcd' > 2700
+            overhead '[HEALING]' 53
+            hotkey 'Bandage Self'
+            createtimer 'bhealcd'
+        endif
+    endif
+    
+    ## clean bandages via water trough
+    if count 'bloody bandage%s%' > 1 and findtype 'water trough' true
+        dclicktype 'bloody bandage%s%'
+        wft 500
+        targettype 'water trough' true
+    endif
+    
+    ## heal/gheal reg check, disables magic healing if out
+    if not maxhp
+        if count '3972' == 0 or count '3973' == 0 or count '3981' == 0 or count '3974' == 0
+            overhead '[OUT OF HEAL REGS]' 34
+            settimer 'mhealcd' 0
+        endif
+    endif
+    
+    ## magic healing overboost
+    if diffhp > 30 and hp >= 40 and mana > 5
+        if timer "mhealcd" > 1000
+            clearall
+            cast 'Heal'
+            wft 1000
+            target 'self'
+            createtimer 'mhealcd'
+        endif
+    elseif hp < 40 and mana > 10
+        if timer 'mhealcd' > 2000
+            clearall
+            cast 'Greater Heal'
+            wft 1000
+            target 'self'
+            createtimer 'mhealcd'
+        endif
+    endif
+
+
+    ## get some mana
+    if diffhp <= 10 and mana < maxmana and not warmode
+        useskill 'Meditation'
+        while diffmana > 0
+            if diffhp >= 10 or poisoned
+                break
+            elseif insysmsg 'You cannot move' or insysmsg 'You are frozen'
+                break
+            elseif insysmsg 'cannot focus'
+                break
+            elseif insysmsg 'You begin meditating...'
+                for 45
+                    if diffhp >= 10
+                        break
+                    elseif insysmsg 'You enter a meditative trance.'
+                        overhead '[MEDITATING]'
+                        break
+                    endif
+                    wait 100
+                endfor
+            elseif insysmsg 'mana for this spell'
+                break
+            elseif insysmsg 'You are preoccupied' or warmode
+                hotkey 'Toggle Peace Only'
+                break
+            endif
+            wait 100
+        endwhile
+    endif
+    
+    ## wait check
+    if insysmsg 'You must wait' or insysmsg 'World save'
+        overhead '[WAITING]' 53
+        wait 1000
+    endif    
+    
+    ## while not dead wait
+    wait 100
+endwhile
+
+## stop script if dead
+if dead
+    stop
+endif

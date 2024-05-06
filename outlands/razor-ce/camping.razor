@@ -1,4 +1,7 @@
-// Camping Script
+#SCRIPT: Camping
+#Author: Talik Starr
+#Shard: Outlands
+
 if weight > 365
     overhead "Reached Weight Threshold!" 34
     while count 'kindling' > 0
@@ -14,8 +17,8 @@ endif
 
 wait 500
 overhead 'Using Dagger' 0
-//lifttype 'dagger'
-//droprelloc -1 0
+#lifttype 'dagger'
+#droprelloc -1 0
 dclicktype 'dagger' backpack
 waitfortarget 1000
 targetrelloc -1 0
@@ -46,28 +49,28 @@ for 15
         endfor
     else
         if insysmsg "world is saving" or insysmsg 'save complete'
-        // World Save Check
+            # World Save Check
             replay
         elseif insysmsg "export is processing" or insysmsg 'export completed'
-        // World Save Check
+            # World Save Check
             replay
         elseif insysmsg "You put"
-            // Success Check
+            # Success Check
             replay
         elseif insysmsg "There's not enough"
-            // Empty Check
+            # Empty Check
             overhead "Out of wood!" 88
             break
         elseif insysmsg "You can't"
-            // Error Check
+            # Error Check
             overhead "Error!" 34
             break
         elseif insysmsg "Target cannot"
-            // Error Check2
+            # Error Check2
             overhead "Error!" 34
             break
         elseif insysmsg "You must wait"
-            // Wait message
+            # Wait message
             overhead 'You must wait..' 34
             wait 1 sec
             replay
@@ -76,7 +79,7 @@ for 15
 endfor
 
 if insysmsg "You must wait"
-    // Wait message
+    # Wait message
     overhead 'You must wait..' 34
     wait 1 sec
     replay

@@ -1,4 +1,7 @@
-// Bandaid Healing
+#SCRIPT: Bandage Healing
+#Author: Talik Starr
+#Shard: Outlands
+
 if weight > 300
     overhead "Reached Weight Threshold!" 34
     wait 1 sec
@@ -12,11 +15,11 @@ endif
 wait 500
 if skill 'Healing' < 100
     hotkey 'bandage lasttarget'
-    //hotkey 'use bandage (no timer)'
+    #hotkey 'use bandage (no timer)'
     hotkey 'next friend target'
-    //waitfortarget 1 sec
-    //target next 'friendly' humanoid
-    //target closest 'friendly' humanoid
+    #waitfortarget 1 sec
+    #target next 'friendly' humanoid
+    #target closest 'friendly' humanoid
 endif
 
 for 20
@@ -45,35 +48,35 @@ for 20
         endfor
     else
         if insysmsg "world is saving" or insysmsg 'save complete'
-        // World Save Check
+            # World Save Check
             replay
         elseif insysmsg "export is processing" or insysmsg 'export completed'
-        // World Save Check
+            # World Save Check
             replay
         elseif insysmsg "You finish"
-            // Success Check
+            # Success Check
             replay
         elseif insysmsg "slips"
-            // Fail Check
+            # Fail Check
             wait 1 sec
             replay
         elseif insysmsg "is not damaged"
-            // Empty Check
+            # Empty Check
             replay
         elseif insysmsg "cannot be used"
-            // Error Check
+            # Error Check
             overhead "Error!" 34
             break
         elseif insysmsg "target is out of range"
-            // Error Check
+            # Error Check
             overhead "Out of range!" 34
             replay
         elseif insysmsg "too far away"
-            // Error Check
+            # Error Check
             overhead "Too far!" 34
             replay
         elseif insysmsg "You must wait"
-            // Wait message
+            # Wait message
             overhead 'You must wait..' 34
             wait 1 sec
             replay
@@ -82,7 +85,7 @@ for 20
 endfor
 
 if insysmsg "You must wait"
-    // Wait message
+    # Wait message
     overhead 'You must wait..' 34
     wait 1 sec
     replay

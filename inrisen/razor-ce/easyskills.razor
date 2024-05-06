@@ -1,0 +1,191 @@
+#SCRIPT: Easy Skills
+#Author: Talik Starr
+#IN:RISEN
+# Skills: Camping, Spirit Speak, Hiding, Stealth, Detect Hidden, Evaluating Intelligence, Arms Lore
+    # Animal Lore, Anatomy, Tracking, Item Identification, Taste Identification, Musicianship, Peacemaking 
+# Set values to 0 to skip
+#Version 1.3
+#Last Modified: 4/19/24
+
+@setvar! isStealth          0
+@setvar! isCamping          0
+@setvar! isSpiritSpeak      0
+@setvar! isHiding           0
+@setvar! isDetectHidden     0
+@setvar! isEvalIntel        0
+@setvar! isAnatomy          0
+@setvar! isTracking         0
+@setvar! isArmsLore         0
+@setvar! isAnimalLore       0
+@setvar! isItemId           0
+@setvar! isTasteId          0
+@setvar! isMusic            0
+@setvar! isPeace            0
+@setvar! isDiscord          0
+@setvar! isProvo            0
+@setvar! isSnoop            0
+
+while not dead
+    if insysmsg 'You must wait'
+        wait 1100
+    endif
+        
+    if isCamping = 1 and skill "Camping" < 100
+        if not findtype "kindling" backpack
+            hotkey "Use item in hand"
+            wft 500
+            targetrelloc -1 -1
+        endif
+        if findtype 'kindling' backpack
+            dclicktype "kindling" backpack
+            wait 1100
+         endif
+    endif
+
+    if isSpiritSpeak = 1 and skill "spiritspeak" < 100
+        useskill 'spiritspeak'
+        for 10
+            if insysmsg 'You fail your attempt at' or insysmsg 'You establish contact'
+                wait 2500
+                break
+            endif
+            wait 150
+        endfor
+    endif
+
+    if isSnoop = 1 and skill 'snooping' < 100
+        dclick '0x44D3' // sparring partner
+        wait 200
+        dclick '0x40043CC2' // his backpack
+        wait 1100
+    endif
+    
+    if isHiding = 1 and skill 'hiding' < 100
+        useskill "hiding"
+        wait 2100
+    endif
+    
+    if isStealth = 1 and skill 'hiding' > 80 and skill 'stealth' < 100
+            useskill "stealth"
+        wait 2100
+    endif
+    
+    if isDetectHidden = 1 and skill "detectinghidden" < 100
+        useskill 'detectinghidden'
+        waitfortarget 500
+        target 'self'
+        wait 400
+    endif
+    
+    if isEvalIntel = 1 and skill "evalint" < 100
+        useskill 'evalint'
+        waitfortarget 500
+        target 'self'
+        wait 1100
+    endif
+    
+    if isAnatomy = 1 and skill "anatomy" < 100
+        useskill 'anatomy'
+        waitfortarget 500
+        target 'self'
+        wait 1100
+    endif
+    
+    if isAnimalLore = 1 and skill "animallore" < 100
+        useskill 'animallore'
+        waitfortarget 500
+        target 'self'
+        wait 1100
+    endif
+    
+    if isTracking = 1 and skill "tracking" < 100
+        useskill 'tracking'
+        waitforgump 2976808305 3000
+        gumpclose 2976808305
+        wait 1100
+    endif
+    
+    if isArmsLore = 1 and skill "armslore" < 100 and findtype "dagger" backpack
+        useskill 'armslore'
+        waitfortarget 500
+        targettype 'dagger' backpack
+        wait 1100
+    endif
+    
+    if isItemId = 1 and skill "itemidentification" < 100 and findtype "cake" backpack
+        useskill 'itemidentification'
+        waitfortarget 500
+        targettype 'cake' backpack
+        wait 1100
+    endif
+    
+    if isTasteId = 1 and skill "tasteidentification" < 100 and findtype "cake" backpack
+        useskill 'tasteidentification'
+        waitfortarget 500
+        targettype 'cake' backpack
+        wait 1100
+    endif
+    
+    if isMusic = 1 and skill "musicianship" < 100 and findtype "lap harp" backpack
+        dclicktype 'lap harp' backpack
+        wait 7100
+    endif
+    
+    if isPeace = 1 and skill "musicianship" > 80 and findtype "lap harp" backpack and skill 'peacemaking' < 100
+        useskill 'peacemaking'
+        wft 500
+        if insysmsg 'What instrument'
+            targettype 'lap harp' backpack
+            wft 1000
+        endif
+        target 'self'
+        for 10
+            if insysmsg 'stopping the battle'
+                wait 4700
+                break
+            elseif insysmsg 'You attempt to calm'
+                wait 9700
+                break
+            endif
+            wait 100
+        endfor
+    endif
+    
+    if isDiscord = 1 and skill "musicianship" > 80 and findtype "lap harp" backpack and skill 'discordance' < 100
+        useskill 'discordance'
+        wft 500
+        if insysmsg 'What instrument'
+            targettype 'lap harp' backpack
+            wft 500
+        endif
+        hotkey 'Target Closest Grey'
+        wait 100
+    endif
+    
+    if isProvo = 1 and skill "musicianship" > 80 and findtype "lap harp" backpack and skill 'provocation' < 100
+        useskill 'provocation'
+        wft 1000
+        if insysmsg 'What instrument'
+            targettype 'lap harp' backpack
+            wft 1000
+        endif
+        target closest 'grey'
+        wft 1000
+        target next 'grey' humanoid
+        target 'last'
+        for 10
+            if insysmsg 'fails to incite' or insysmsg 'play successfully'
+                wait 4000
+                break
+            endif
+            wait 100
+        endfor
+    endif
+   
+    wait 150
+endwhile
+
+// dead check
+if dead
+    stop
+endif

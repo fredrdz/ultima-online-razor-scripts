@@ -1,6 +1,9 @@
-// Bandage Processing
+#SCRIPT: Bandage Processing
+#Author: Talik Starr
+#Shard: Outlands
+
 if insysmsg 'world is saving'
-    // World Save Check
+    # World Save Check
     for 30
         overhead 'Waiting for world save...'
         wait 5 sec
@@ -12,11 +15,11 @@ if insysmsg 'world is saving'
         endif
     endfor
 elseif weight > 170
-    // Weight Check
+    # Weight Check
     overhead 'weight threshold reached' 34
     stop
 elseif insysmsg "You must wait"
-    // Wait Check
+    # Wait Check
     wait 1250
     replay
 elseif count 'bale%s% of cotton' > 0 and findtype 'spinning wheel' true
