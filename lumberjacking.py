@@ -3,9 +3,23 @@
 # IN:RISEN
 # Skill: Lumberjacking
 
-if Player.GetRealSkillValue("Lumberjacking") < 40:
-    Misc.SendMessage("No skill, stopping", 33)
-    Stop
+# custom RE packages
+from glossary.colors import colors
+from utils.actions import Bank
+from utils.items import MoveItemsByCount, RestockAgent
+from utils.magery import Recall
+from utils.pathing import Pathing
+from utils.status import Overweight
+
+# System packages
+from System.Collections.Generic import List
+from System import Byte
+from math import sqrt
+import clr
+
+clr.AddReference("System.Speech")
+from System.Speech.Synthesis import SpeechSynthesizer
+
 
 # ********************
 # you want boards or logs?
@@ -20,25 +34,33 @@ alert = True
 
 # Parameters
 scanRadius = 30
-# axeSerial = None
 afkGumpID = 408109089
 EquipAxeDelay = 1000
 TimeoutOnWaitAction = 3000
 ChopDelay = 1000
-runeBank = 0x400BAAB7  # Rune for bank
-recallPause = 3000
 dragDelay = 600
-logID = 0x1BDD
-boardID = 0x1BD7
-otherResourceID = [0x318F, 0x3199, 0x2F5F, 0x3190, 0x3191]
+
+weightLimit = Player.MaxWeight + 30
+backpack = Player.Backpack.Serial
 logBag = 0x40054709  # Serial of log bag in bank
-otherResourceBag = 0x40137DD2  # Serial of other resource in bank
-weightLimit = Player.MaxWeight
-bankX = 3689
-bankY = 2521
-axeList = [0x0F49, 0x13FB, 0x0F47, 0x1443, 0x0F45, 0x0F4B, 0x0F43]
+bankX = 3697
+bankY = 2513
+bankRune = 0x400BAAB7
+
 # rightHand = Player.CheckLayer('RightHand')
 leftHand = Player.CheckLayer("LeftHand")
+axeList = [0x0F49, 0x13FB, 0x0F47, 0x1443, 0x0F45, 0x0F4B, 0x0F43]
+
+logID = 0x1BDD
+boardID = 0x1BD7
+goldID = 0x0EED
+
+bankDeposit = [
+    (boardID, -1),
+    (logID, -1),
+    (goldID, -1),
+]
+
 treeStaticIDs = [
     0x0C95,
     0x0C96,
@@ -96,20 +118,13 @@ treeStaticIDs = [
 
 # ---------------------------------------------------------------------
 # System Variables
-from System.Collections.Generic import List
-from System import Byte
-from math import sqrt
-import clr
-
-clr.AddReference("System.Speech")
-from System.Speech.Synthesis import SpeechSynthesizer
-
 tileinfo = List[Statics.TileInfo]
 trees = []
 blockCount = 0
 onLoop = True
 
 
+# Custom Classes
 class Tree:
     x = None
     y = None
@@ -123,17 +138,10 @@ class Tree:
         self.id = id
 
 
-class Point3D:
-    def __init__(self, x, y, z):
-        self.x = int(x)
-        self.y = int(y)
-        self.z = int(z)
-
-
 # ---------------------------------------------------------------------
 def CheckInventory():
     global trees
-    if Player.Weight >= weightLimit:
+    if Overweight(weightLimit):
         DepositInBank()
         trees = []
         ScanStatic()
@@ -141,47 +149,23 @@ def CheckInventory():
 
 
 # ---------------------------------------------------------------------
-def RecallBack(rune):
-    Spells.CastMagery("Recall")
-    Target.WaitForTarget(3500, False)
-    Target.TargetExecute(rune)
-    Misc.Pause(recallPause)
-
-
-# ---------------------------------------------------------------------
 def DepositInBank():
-    RecallBack(runeBank)
-    Misc.Pause(recallPause)
-    Player.ChatSay(77, "bank")
-    Misc.Pause(300)
-
-    Restock.ChangeList("lj")
-    Restock.FStart()
+    Recall(bankRune)
+    Bank(bankX, bankY)
+    RestockAgent("lj")
     Misc.Pause(3000)
-    Restock.ChangeList("recall")
-    Restock.FStart()
+    RestockAgent("recall")
     Misc.Pause(3000)
-
     CutLogs()
-    for item in Player.Backpack.Contains:
-        if item.ItemID == boardID:
-            Misc.SendMessage(">> moving boards", 77)
-            Items.Move(item, logBag, 0)
-            Misc.Pause(dragDelay)
-        else:
-            for otherid in otherResourceID:
-                if item.ItemID == otherid:
-                    Misc.SendMessage(">> moving other", 77)
-                    Items.Move(item, otherResourceBag, 0)
-                    Misc.Pause(dragDelay)
-                else:
-                    Misc.NoOperation()
+    Misc.Pause(3000)
+    MoveItemsByCount(bankDeposit, backpack, logBag)
+    Misc.Pause(3000)
 
 
 # ---------------------------------------------------------------------
 def ScanStatic():
     global trees
-    Misc.SendMessage(">> scan tile started...", 77)
+    Misc.SendMessage(">> scan tile started...", colors["notice"])
     minX = Player.Position.X - scanRadius
     maxX = Player.Position.X + scanRadius
     minY = Player.Position.Y - scanRadius
@@ -199,7 +183,7 @@ def ScanStatic():
                         if staticid == tile.StaticID and not Timer.Check(
                             "%i,%i" % (x, y)
                         ):
-                            # Misc.SendMessage( '>> tree X: %i - Y: %i - Z: %i' % ( minX, minY, tile.StaticZ ), 66 )
+                            # Misc.SendMessage( '>> tree X: %i - Y: %i - Z: %i' % ( minX, minY, tile.StaticZ ), colors["debug"])
                             trees.Add(Tree(x, y, tile.StaticZ, tile.StaticID))
             y = y + 1
         y = minY
@@ -211,14 +195,7 @@ def ScanStatic():
             pow((tree.x - Player.Position.X), 2) + pow((tree.y - Player.Position.Y), 2)
         ),
     )
-    Misc.SendMessage(">> total trees: %i" % (trees.Count), 77)
-
-
-# ---------------------------------------------------------------------
-def PathCount(x, y):
-    playerX = Player.Position.X
-    playerY = Player.Position.Y
-    return Misc.Distance(playerX, playerY, x, y)
+    Misc.SendMessage(">> total trees: %i" % (trees.Count), colors["notice"])
 
 
 # ---------------------------------------------------------------------
@@ -228,119 +205,23 @@ def MoveToTree():
     if not trees or trees.Count == 0:
         return
 
-    Misc.SendMessage(">> moving to tree: %i, %i" % (trees[0].x, trees[0].y), 77)
-    # Misc.Resync()
+    Misc.SendMessage(
+        ">> moving to tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
+    )
+    Misc.Resync()
 
     if Pathing(trees[0].x, trees[0].y, 0):
-        Misc.SendMessage(">> reached tree: %i, %i" % (trees[0].x, trees[0].y), 77)
+        Misc.SendMessage(
+            ">> reached tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
+        )
     else:
         Misc.SendMessage(
-            ">> failed to reach tree: %i, %i" % (trees[0].x, trees[0].y), 34
+            ">> failed to reach tree: %i, %i" % (trees[0].x, trees[0].y),
+            colors["error"],
         )
         trees = []
         ScanStatic()
         MoveToTree()
-
-
-# ---------------------------------------------------------------------
-def Pathing(x, y, z):
-    route = PathFinding.Route()
-    destination = Point3D(x, y, z)
-    playerPosition = Player.Position
-
-    # determine direction offset
-    if playerPosition.X > destination.x:
-        destinationX = destination.x + 1
-    elif playerPosition.X < destination.x:
-        destinationX = destination.x - 1
-    else:
-        destinationX = destination.x
-
-    ## TODO: issue here with Y axis; tends to be blocked which causes the uo client to freeze
-
-    if playerPosition.Y > destination.y:
-        destinationY = destination.y + 1
-    elif playerPosition.Y < destination.y:
-        destinationY = destination.y - 1
-    else:
-        destinationY = destination.y
-
-    # check if destination is a valid land tile
-    if Statics.GetLandID(destinationX, destinationY, 0) != None:
-        destinationY = destination.y
-
-    # razor pathing parameters
-    route.X = destinationX
-    route.Y = destinationY
-    route.DebugMessage = False
-    route.StopIfStuck = True
-    route.MaxRetry = 0
-    route.Timeout = 3
-
-    # custom pathing parameters
-    failCount = 0
-    failTolerance = 3
-    maxFails = 6
-    minDistance = 30
-
-    while not PathCount(route.X, route.Y) == 0:
-        Misc.Pause(100)
-        distance = PathCount(route.X, route.Y)
-        message = ">> distance left: %i" % (distance)
-        Misc.SendMessage(message, 50)
-
-        if distance < minDistance:
-            Misc.SendMessage(">> classicUO pathing", 50)
-            Player.PathFindTo(route.X, route.Y, z)
-            Timer.Create("classicPathingTimeout", 10000)
-            while not PathCount(route.X, route.Y) == 0:
-                Misc.Pause(100)
-                if not Timer.Check("classicPathingTimeout"):
-                    Misc.SendMessage(">> classicUO pathing failed", 34)
-                    break
-        elif failCount <= failTolerance:
-            Misc.SendMessage(">> razor pathing", 50)
-            if not PathFinding.Go(route):
-                traveled = distance - PathCount(route.X, route.Y)
-                if traveled == 0:
-                    Misc.SendMessage(">> razor pathing failed", 34)
-                    failCount = failCount + 1
-                else:
-                    failCount = 0
-        elif failCount > maxFails:
-            Misc.SendMessage(">> all pathing attempts failed", 34)
-            return False
-        elif Player.Position.Z != 0 or failCount > failTolerance:
-            Misc.SendMessage(">> pathing issues detected", 34)
-            Misc.SendMessage(">> trying directional movement", 50)
-            directionalMove(route.X, route.Y)
-            traveled = distance - PathCount(route.X, route.Y)
-            if traveled < 4:
-                Misc.SendMessage(">> directional pathing failed", 34)
-                failCount = failCount + 1
-            else:
-                failCount = 0
-
-    return True
-
-
-# ---------------------------------------------------------------------
-def directionalMove(x, y):
-    playerPos = Player.Position
-
-    for _ in range(2):
-        if playerPos.X > x:
-            Player.Run("Left")
-            Misc.Pause(150)
-        elif playerPos.X < x:
-            Player.Run("Right")
-            Misc.Pause(150)
-        elif playerPos.Y > y:
-            Player.Run("Down")
-            Misc.Pause(150)
-        elif playerPos.Y < y:
-            Player.Run("Up")
-            Misc.Pause(150)
 
 
 # ---------------------------------------------------------------------
@@ -374,7 +255,7 @@ def EquipAxe():
 def CutTree():
     global blockCount
     if Target.HasTarget():
-        Misc.SendMessage(">> detected block, canceling target!", 77)
+        Misc.SendMessage(">> detected block, canceling target!", colors["notice"])
         Target.Cancel()
         Misc.Pause(500)
 
@@ -399,14 +280,16 @@ def CutTree():
         Misc.Pause(100)
 
     if Journal.SearchByType("There's not enough wood here to harvest.", "System"):
-        Misc.SendMessage(">> tree change", 77)
+        Misc.SendMessage(">> tree change", colors["notice"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif Journal.Search("That is too far away"):
         blockCount = blockCount + 1
         Journal.Clear()
         if blockCount > 1:
             blockCount = 0
-            Misc.SendMessage(">> possible block, detected tree change", 77)
+            Misc.SendMessage(
+                ">> possible block, detected tree change", colors["notice"]
+            )
             Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
         else:
             CutTree()
@@ -425,7 +308,7 @@ def CutTree():
     #     Timer.Create("chopTimer", 10000)
     #     CutTree()
     elif Timer.Check("chopTimer") == False:
-        Misc.SendMessage(">> tree change", 77)
+        Misc.SendMessage(">> tree change", colors["notice"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     else:
         CutTree()
@@ -472,13 +355,13 @@ def safteyNet():
             say("Someone is here.")
             toonName = Mobiles.Select(toon, "Nearest")
             if toonName:
-                Misc.SendMessage(">> toon near: " + toonName.Name, 30)
+                Misc.SendMessage(">> toon near: " + toonName.Name, colors["alert"])
         elif invul:
             Misc.Beep()
             say("GM Activity.")
             invulName = Mobiles.Select(invul, "Nearest")
             if invulName:
-                Misc.SendMessage(">> invul near:" + invul.Name, 30)
+                Misc.SendMessage(">> invul near:" + invul.Name, colors["alert"])
         else:
             Misc.NoOperation()
 
@@ -502,7 +385,7 @@ invulFilter.Friend = False
 invulFilter.Notorieties = List[Byte](bytes([7]))
 
 Friend.ChangeList("lj")
-Misc.SendMessage(">> lumberjack starting up...", 77)
+Misc.SendMessage(">> lumberjack starting up...", colors["notice"])
 EquipAxe()
 while onLoop:
     ScanStatic()

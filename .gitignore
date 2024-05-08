@@ -13,3 +13,8 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# default files in Razor Enhanced scripts folder
+.vscode*
+Examples/
+Assemblies.cfg
