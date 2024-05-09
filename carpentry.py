@@ -108,13 +108,12 @@ def Scrolls():
     craftItem = blankScroll_ID
 
     if Player.Weight <= restockWeight:
-        Bank(bankX, bankY)
-        MoveItemsByCount(bankDeposit, backpack, itemBag)
-        RestockAgent("carpentry")
+        Misc.SendMessage(">> within restock threshold", colors["error"])
+        return False
 
     if Overweight(weightLimit):
-        Bank(bankX, bankY)
-        MoveItemsByCount(bankDeposit, backpack, itemBag)
+        Misc.SendMessage(">> player overweight", colors["error"])
+        return False
 
     if not Build(craftItem):
         Misc.SendMessage(">> no items could be built", colors["error"])
@@ -133,4 +132,8 @@ while Player.GetRealSkillValue("Carpentry") < 100:
             break
     elif Player.GetSkillValue("Carpentry") >= 70:
         if not Scrolls():
-            break
+            Bank(bankX, bankY)
+            MoveItemsByCount(bankDeposit, backpack, itemBag)
+            Misc.Pause(3000)
+            RestockAgent("carpentry")
+            Misc.Pause(3000)

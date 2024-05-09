@@ -1,4 +1,3 @@
-# WIP
 """
 SCRIPT: veterinary.py
 Author: Talik Starr
@@ -6,6 +5,8 @@ IN:RISEN
 Skill: Veterinary
 """
 
+from config import targetClearDelayMilliseconds
+from glossary.items.healing import FindBandage
 from glossary.colors import colors
 
 
@@ -14,59 +15,82 @@ def TrainVeterinary():
     Trains Veterinary to the skill cap
     """
     if Player.GetRealSkillValue("Veterinary") == Player.GetSkillCap("Veterinary"):
-        Misc.SendMessage("You've already maxed out Veterinary!", colors["green"])
+        Misc.SendMessage(">> maxed out veterinary skill", colors["notice"])
         return
 
     bandages = FindBandage(Player.Backpack)
 
-    if bandages == None:
-        Misc.SendMessage("No bandages to train with", colors["red"])
+    if bandages is None:
+        Misc.SendMessage(">> no bandages to train with", colors["error"])
         return
 
-    ghost = Target.PromptTarget("Select ghost to train on")
-    Mobiles.Message(ghost, colors["cyan"], "Selected for Veterinary training")
+    animal_one_serial = Target.PromptTarget("Select first animal to train on")
+    animal_one_mobile = Mobiles.FindBySerial(animal_one_serial)
+    Mobiles.Message(
+        animal_one_mobile,
+        colors["info"],
+        "Selected first animal for Veterinary training",
+    )
 
-    Journal.Clear()
+    # Misc.SendMessage(
+    #     ">> debug -- 1:hp: %i/%i" % (animal_one_mobile.Hits, animal_one_mobile.HitsMax),
+    #     colors["debug"],
+    # )
+
+    animal_two_serial = Target.PromptTarget("Select second animal to train on")
+    animal_two_mobile = Mobiles.FindBySerial(animal_two_serial)
+    Mobiles.Message(
+        animal_two_mobile,
+        colors["info"],
+        "Selected second animal for Veterinary training",
+    )
+
+    animal_targets = [animal_one_mobile, animal_two_mobile]
+    current_animal_index = 0
+
+    all_stop_sent = False
+    all_kill_sent = False
 
     while not Player.IsGhost and Player.GetRealSkillValue(
         "Veterinary"
     ) < Player.GetSkillCap("Veterinary"):
-        # Clear any previously selected target and the target queue
+        if animal_targets[current_animal_index].Hits < 10:
+            if not all_stop_sent:
+                Player.ChatSay(colors["chat"], "All Stop")
+                all_stop_sent = True
+                all_kill_sent = False
+        else:
+            if not all_kill_sent:
+                Player.ChatSay(colors["chat"], "All Kill")
+                Target.WaitForTarget(2000, False)
+                Target.TargetExecute(animal_targets[current_animal_index])
+                all_kill_sent = True
+                all_stop_sent = False
+
+        # clear any previously selected target and the target queue
         Target.ClearLastandQueue()
 
-        # Wait for the target to finish clearing
+        # wait for the target to finish clearing
         Misc.Pause(targetClearDelayMilliseconds)
 
         Items.UseItem(bandages)
-        Target.WaitForTarget(2000, True)
-        Target.TargetExecute(ghost)
+        Target.WaitForTarget(2000, False)
+        Target.TargetExecute(animal_targets[current_animal_index])
 
-        # Wait for a journal entry to come up stating that the bandage application has finished
-        while not (
-            Journal.SearchByType("You are able to resurrect the creature.", "Regular")
-            or Journal.SearchByType("You fail to resurrect the creature", "Regular")
-        ):
-            if Journal.SearchByType(
-                "The pet's owner must be nearby to attempt the resurrection.", "Regular"
-            ):
-                Misc.SendMessage(
-                    "The pet's owner left, cannot continue training Veterinary",
-                    colors["red"],
-                )
-                return
-            Misc.Pause(100)
-
-        Journal.Clear()
+        # Rotate to the next animal
+        current_animal_index = (current_animal_index + 1) % len(animal_targets)
 
         bandages = FindBandage(Player.Backpack)
-        if bandages == None:
-            Misc.SendMessage("Ran out of bandages to train with", colors["red"])
+        if bandages is None:
+            Player.ChatSay(colors["chat"], "All Stop")
+            Misc.SendMessage(">> ran out of bandages to train with", colors["error"])
             return
 
-        Misc.Pause(50)
+        Misc.Pause(2500)
 
     if Player.GetRealSkillValue("Veterinary") == Player.GetSkillCap("Veterinary"):
-        Misc.SendMessage("Veterinary training complete!", colors["green"])
+        Player.ChatSay(colors["chat"], "All Stop")
+        Misc.SendMessage(">> veterinary training complete!", colors["success"])
 
 
 # Start Veterinary training
