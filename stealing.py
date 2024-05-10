@@ -5,6 +5,10 @@ IN:RISEN
 Skill: Stealing
 """
 
+# System packages
+import sys
+
+# custom RE packages
 from config import journalEntryDelayMilliseconds
 from glossary.colors import colors
 
@@ -67,19 +71,21 @@ def steal(item, mark):
             break
 
         Misc.SendMessage(">> attempting steal", colors["status"])
+        Target.ClearLastandQueue()
+        Target.Cancel()
         Player.UseSkill("Stealing")
         Misc.Pause(journalEntryDelayMilliseconds)
         if Journal.SearchByType("You must wait to perform another action.", "System"):
             Misc.SendMessage(">> skill cooldown", colors["warning"])
-            Misc.Pause(1000)
             Journal.Clear()
+            Misc.Pause(1000)
         elif Journal.SearchByType("You can't steal that.", "System"):
             Misc.SendMessage(">> blessed item", colors["error"])
             ignoreList.append(item)
             Journal.Clear()
             attempted = True
         else:
-            Target.WaitForTarget(1500)
+            Target.WaitForTarget(1000)
             while Player.DistanceTo(mark) > 1:
                 Misc.Pause(short_delay)
             Target.TargetExecute(item)
@@ -164,7 +170,3 @@ def stealing_run_once_targeted(mobile):
         snoop_recursive(mark.Backpack, mark)
         Misc.Pause(short_delay)
     Misc.Pause(600)
-
-
-# Misc.SendMessage(">> stealing starting up...", colors["notice"])
-# stealing_run_continuously()
