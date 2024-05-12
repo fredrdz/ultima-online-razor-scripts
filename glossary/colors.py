@@ -1,5 +1,5 @@
 colors = {
-    "debug": 10,
+    "debug": 750,
     "fatal": 20,
     "alert": 30,
     "error": 33,

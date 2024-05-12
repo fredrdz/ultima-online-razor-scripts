@@ -8,11 +8,11 @@ from glossary.colors import colors
 from utils.actions import Bank
 from utils.items import MoveItemsByCount, RestockAgent
 from utils.magery import Recall
-from utils.pathing import Pathing
 from utils.status import Overweight
 
 # System packages
 import sys
+import random
 from System.Collections.Generic import List
 from System import Byte
 from math import sqrt
@@ -119,8 +119,6 @@ treeStaticIDs = [
 
 # ---------------------------------------------------------------------
 # System Variables
-tileinfo = List[Statics.TileInfo]
-trees = []
 blockCount = 0
 onLoop = True
 
@@ -137,16 +135,6 @@ class Tree:
         self.y = y
         self.z = z
         self.id = id
-
-
-# ---------------------------------------------------------------------
-def CheckInventory():
-    global trees
-    if Overweight(weightLimit):
-        DepositInBank()
-        trees = []
-        ScanStatic()
-        MoveToTree()
 
 
 # ---------------------------------------------------------------------
@@ -205,7 +193,7 @@ def ScanStatic():
             pow((tree.x - Player.Position.X), 2) + pow((tree.y - Player.Position.Y), 2)
         ),
     )
-    Misc.SendMessage(">> total trees: %i" % (trees.Count), colors["notice"])
+    Misc.SendMessage(">> total trees: %i" % (trees.Count), colors["success"])
 
 
 # ---------------------------------------------------------------------
@@ -213,25 +201,34 @@ def MoveToTree():
     global trees
 
     if not trees or trees.Count == 0:
-        return
+        return False
 
     Misc.SendMessage(
         ">> moving to tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
     )
-    Misc.Resync()
 
-    if Pathing(trees[0].x, trees[0].y, 0):
-        Misc.SendMessage(
-            ">> reached tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
-        )
-    else:
-        Misc.SendMessage(
-            ">> failed to reach tree: %i, %i" % (trees[0].x, trees[0].y),
-            colors["error"],
-        )
-        trees = []
-        ScanStatic()
-        MoveToTree()
+    chopX = trees[0].x + 1
+    chopY = trees[0].y
+    Misc.SetSharedValue("pathFindingOverride", (chopX, chopY))
+    Misc.ScriptRun("pathfinding.py")
+
+    Timer.Create("path_timeout", 10000)
+    while Misc.Distance(Player.Position.X, Player.Position.Y, chopX, chopY) != 0:
+        Misc.Pause(100)
+        if not Timer.Check("path_timeout"):
+            if Misc.ScriptStatus("pathfinding.py"):
+                Misc.ScriptStop("pathfinding.py")
+            Misc.SendMessage(">> pathlocked, resetting", colors["fatal"])
+            Misc.SendMessage(
+                ">> failed to reach tree: %i, %i" % (trees[0].x, trees[0].y),
+                colors["error"],
+            )
+            return False
+
+    Misc.SendMessage(
+        ">> reached tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
+    )
+    return True
 
 
 # ---------------------------------------------------------------------
@@ -269,7 +266,7 @@ def CutTree():
         Target.Cancel()
         Misc.Pause(500)
 
-    if Player.Weight >= weightLimit:
+    if Overweight(weightLimit):
         return
 
     Journal.Clear()
@@ -285,44 +282,49 @@ def CutTree():
         )
         or Journal.SearchByType("You chop some", "System")
         or Journal.SearchByType("There's not enough wood here to harvest.", "System")
-        or Timer.Check("chopTimer") == False
+        or not Timer.Check("chopTimer")
     ):
         Misc.Pause(100)
 
     if Journal.SearchByType("There's not enough wood here to harvest.", "System"):
-        Misc.SendMessage(">> tree change", colors["notice"])
+        Misc.SendMessage(">> no wood here", colors["status"])
+        Misc.SendMessage(">> tree change", colors["status"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif Journal.Search("That is too far away"):
         blockCount = blockCount + 1
         Journal.Clear()
         if blockCount > 1:
             blockCount = 0
-            Misc.SendMessage(
-                ">> possible block, detected tree change", colors["notice"]
-            )
+            Misc.SendMessage(">> blocked; cannot target", colors["warning"])
             Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
         else:
             CutTree()
     elif Journal.Search("Target cannot be seen"):
-        MoveToTree()
-    elif Timer.Check("chopTimer") == False:
-        Misc.SendMessage(">> tree change", colors["notice"])
+        blockCount = blockCount + 1
+        Journal.Clear()
+        if blockCount > 1:
+            blockCount = 0
+            Misc.SendMessage(">> blocked; cannot target", colors["warning"])
+            Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
+        else:
+            CutTree()
+    elif not Timer.Check("chopTimer"):
+        Misc.SendMessage(">> tree change", colors["status"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
+    elif Journal.Search("bloodwood"):
+        Player.HeadMessage(1194, "BLOODWOOD!")
+        Timer.Create("chopTimer", 10000)
+        CutTree()
+    elif Journal.Search("heartwood"):
+        Player.HeadMessage(1193, "HEARTWOOD!")
+        Timer.Create("chopTimer", 10000)
+        CutTree()
+    elif Journal.Search("frostwood"):
+        Player.HeadMessage(1151, "FROSTWOOD!")
+        Timer.Create("chopTimer", 10000)
+        CutTree()
     else:
         CutTree()
-
-    # elif Journal.Search("bloodwood"):
-    #     Player.HeadMessage(1194, "BLOODWOOD!")
-    #     Timer.Create("chopTimer", 10000)
-    #     CutTree()
-    # elif Journal.Search("heartwood"):
-    #     Player.HeadMessage(1193, "HEARTWOOD!")
-    #     Timer.Create("chopTimer", 10000)
-    #     CutTree()
-    # elif Journal.Search("frostwood"):
-    #     Player.HeadMessage(1151, "FROSTWOOD!")
-    #     Timer.Create("chopTimer", 10000)
-    #     CutTree()
 
 
 # ---------------------------------------------------------------------
@@ -336,77 +338,17 @@ def CutTree():
 
 
 # ---------------------------------------------------------------------
-def afkGump():
+def is_afk_gump():
     if Gumps.HasGump(afkGumpID):
-        # gump_data = Gumps.GetGumpData(afkGumpID)
-        # if gump_data:
-        #     Misc.SendMessage(
-        #         ">> debug -- gump data:\n %s\n" % (gump_data), colors["debug"]
-        #     )
-        #
-        #     gump_strings = gump_data.gumpStrings
-        #     if gump_strings:
-        #         for gump_string in gump_strings:
-        #             Misc.SendMessage(
-        #                 ">> debug -- gump string:\n %s\n" % (gump_string),
-        #                 colors["debug"],
-        #             )
-        #
-        #     gump_switches = gump_data.switches
-        #     if gump_switches:
-        #         for gump_switch in gump_switches:
-        #             Misc.SendMessage(
-        #                 ">> debug -- gump switch:\n %s\n" % (gump_switch),
-        #                 colors["debug"],
-        #             )
-        #
-        #     gump_text = gump_data.text
-        #     if gump_text:
-        #         for gump_text_id in gump_text:
-        #             Misc.SendMessage(
-        #                 ">> debug -- gump text:\n %s\n" % (gump_text_id),
-        #                 colors["debug"],
-        #             )
-        #
-        #     gump_text_id = gump_data.textID
-        #     if gump_text_id:
-        #         for gump_text_id in gump_text_id:
-        #             Misc.SendMessage(
-        #                 ">> debug -- gump text id:\n %s\n" % (gump_text_id),
-        #                 colors["debug"],
-        #             )
-
-        last_gump_line_list = Gumps.LastGumpGetLineList()
-        if last_gump_line_list:
-            for last_gump_line in last_gump_line_list:
-                Misc.SendMessage(
-                    ">> debug -- last gump line:\n %s\n" % (last_gump_line),
-                    colors["debug"],
-                )
-
-        # gump_raw_data = Gumps.GetGumpRawData(afkGumpID)
-        # Misc.SendMessage(
-        #     ">> debug -- gump raw data:\n %s\n" % (gump_raw_data), colors["debug"]
-        # )
-
-        # gump_raw_text = Gumps.GetGumpRawText(afkGumpID)
-        # Misc.SendMessage(
-        #     ">> debug -- gump raw text:\n %s\n" % (gump_raw_text), colors["debug"]
-        # )
-
-        # gump_lines = Gumps.GetLineList(afkGumpID)
-        # if gump_lines:
-        #     for gump_line in gump_lines:
-        #         Misc.SendMessage(
-        #             ">> debug -- gump line:\n %s\n" % (gump_line), colors["debug"]
-        #         )
-
-        right_index = solve_afk_gump(last_gump_line_list)
-        Misc.SendMessage(
-            ">> Debug: Right Button found at index: %i" % right_index, colors["debug"]
-        )
-        # Gumps.SendAction(afkGumpID, right_index)
         return True
+    return False
+
+
+def get_afk_gump_button_options():
+    gump_text_options = Gumps.LastGumpGetLineList()
+    if gump_text_options:
+        return [str(line) for line in gump_text_options]
+    return None
 
 
 def solve_afk_gump(text_list):
@@ -414,45 +356,42 @@ def solve_afk_gump(text_list):
     current_word = ""
 
     for text in text_list:
-        if "rightbutton" in text.lower():
-            result_list.append("Right Button")
-        elif "wrongbutton" in text.lower():
-            result_list.append("Wrong Button")
-        else:
-            current_word += text
-            if "rightbutton" in current_word.lower():
-                result_list.append("Right Button")
-                current_word = ""
-            elif "wrongbutton" in current_word.lower():
-                result_list.append("Wrong Button")
-                current_word = ""
+        if isinstance(text, str):
+            text = text.strip()
+            if text:
+                if "rightbutton" in text.lower():
+                    result_list.append("Right Button")
+                elif "wrongbutton" in text.lower():
+                    result_list.append("Wrong Button")
+                else:
+                    current_word += text
+                    if "rightbutton" in current_word.lower():
+                        result_list.append("Right Button")
+                        current_word = ""
+                    elif "wrongbutton" in current_word.lower():
+                        result_list.append("Wrong Button")
+                        current_word = ""
 
     right_button_index = (
         result_list.index("Right Button") if "Right Button" in result_list else -1
     )
 
-    return right_button_index
-
-
-# def solve_afk_gump(text_list):
-#     result_list = []
-#     current_word = ""
-#
-#     for text in text_list:
-#         if text.strip() != "":
-#             current_word += text
-#         if current_word.lower() == "rightbutton":
-#             result_list.append("Right Button")
-#             current_word = ""
-#         elif current_word.lower() == "wrongbutton":
-#             result_list.append("Wrong Button")
-#             current_word = ""
-#
-#     right_button_index = (
-#         result_list.index("Right Button") if "Right Button" in result_list else -1
-#     )
-#
-#     return right_button_index
+    if isinstance(right_button_index, int):
+        if right_button_index != -1:
+            Misc.SendMessage(
+                ">> afk gump -Right Button- found at index: %i" % right_button_index,
+                colors["info"],
+            )
+            Misc.Pause(random.randint(1000, 2000))
+            Gumps.SendAction(afkGumpID, right_button_index)
+            Gumps.CloseGump(afkGumpID)
+            return True
+        else:
+            Misc.SendMessage(
+                ">> afk gump -Right Button- not found; solve manually or die",
+                colors["fatal"],
+            )
+    return False
 
 
 # ---------------------------------------------------------------------
@@ -463,23 +402,29 @@ def say(text):
 
 # ---------------------------------------------------------------------
 def safteyNet():
-    if afkGump():
+    if is_afk_gump():
         Misc.Beep()
-        Misc.FocusUOWindow()
-        say("Solve AFK Prompt")
+        say("solving AFK Gump")
+        button_options = get_afk_gump_button_options()
+        if button_options:
+            if not solve_afk_gump(button_options):
+                Misc.FocusUOWindow()
+                sys.exit()
+
     if alert:
         toon = Mobiles.ApplyFilter(toonFilter)
         invul = Mobiles.ApplyFilter(invulFilter)
         if toon:
             Misc.Beep()
             Misc.FocusUOWindow()
-            say("Someone is here.")
+            say("someone is here")
             toonName = Mobiles.Select(toon, "Nearest")
             if toonName:
                 Misc.SendMessage(">> toon near: " + toonName.Name, colors["alert"])
         elif invul:
             Misc.Beep()
-            say("GM Activity.")
+            Misc.FocusUOWindow()
+            say("GM here")
             invulName = Mobiles.Select(invul, "Nearest")
             if invulName:
                 Misc.SendMessage(">> invul near:" + invul.Name, colors["alert"])
@@ -509,48 +454,23 @@ Friend.ChangeList("lj")
 Misc.SendMessage(">> lumberjack starting up...", colors["notice"])
 EquipAxe()
 
-text_list = [
-    "Anti Macro Gump",
-    "r",
-    "I",
-    "G",
-    "H",
-    "T",
-    "",
-    "B",
-    "u",
-    "T",
-    "T",
-    "O",
-    "N",
-    "W",
-    "R",
-    "O",
-    "N",
-    "G",
-    "",
-    "B",
-    "U",
-    "T",
-    "t",
-    "O",
-    "N",
-]
-right_index = solve_afk_gump(text_list)
-Misc.SendMessage(
-    ">> Debug: Right Button found at index: %i" % right_index, colors["debug"]
-)
-
-
 while onLoop:
+    Misc.Pause(100)
+    trees = []
     ScanStatic()
-    isScanned = True
+
+    if not trees or trees.Count == 0:
+        Misc.SendMessage(">> no trees found, waiting...", colors["fail"])
+        Misc.Pause(10000)
+        continue
+
     while trees.Count > 0:
-        isScanned = False
         safteyNet()
-        CheckInventory()
-        MoveToTree()
-        CutTree()
+        if Overweight(weightLimit):
+            DepositInBank()
+            break
+        if MoveToTree():
+            CutTree()
         trees.pop(0)
         trees = sorted(
             trees,
@@ -559,7 +479,3 @@ while onLoop:
                 + pow((tree.y - Player.Position.Y), 2)
             ),
         )
-    trees = []
-    if isScanned:
-        DepositInBank()
-    Misc.Pause(100)
