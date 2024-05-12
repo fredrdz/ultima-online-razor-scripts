@@ -5,16 +5,9 @@ IN:RISEN
 Skill: Stealing
 """
 
-# System packages
-import sys
-
 # custom RE packages
 from config import journalEntryDelayMilliseconds
 from glossary.colors import colors
-
-if Player.GetRealSkillValue("Snooping") < 80:
-    Misc.SendMessage(">> not enough snooping; need at least 80", colors["fatal"])
-    sys.exit()
 
 psHue = 0x0481
 blazeHue = 1161  # 0x0489

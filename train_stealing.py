@@ -5,17 +5,13 @@ IN:RISEN
 Skill: Stealing
 """
 
+import config
 from glossary.colors import colors
 from stealing import stealing_run_once_targeted
-from utils.items import MoveItemsByCount
-from utils.item_actions.common import equip_hands, unequip_hands
+from utils.item_actions.common import unequip_hands
 
-packhorse_serial = 0x00004207
-garlic_id = 0x0F84
-backpack = Player.Backpack.Serial
-return_items_list = [
-    (garlic_id, -1),
-]
+mobile_serial = 0x00004207  # pack horse
+item_to_steal = 0x0F84  # garlic
 
 
 def train_stealing_run_continuously(mobile_serial, item_to_steal):
@@ -38,17 +34,18 @@ def train_stealing_run_continuously(mobile_serial, item_to_steal):
         mobile_serial = Target.PromptTarget("Select mobile target to train on")
         train_stealing_run_continuously(mobile_serial)
 
+    unequip_hands()
+
     while not Player.IsGhost and Player.GetRealSkillValue(
         "Stealing"
     ) < Player.GetSkillCap("Stealing"):
-        left_item, right_item = unequip_hands()
         stealing_run_once_targeted(target_mobile)
-        if left_item or right_item:
-            equip_hands(left_item, right_item)
 
         if Items.BackpackCount(item_to_steal) > 0:
-            MoveItemsByCount(return_items_list, backpack, target_mobile.Serial)
+            item = Items.FindByID(item_to_steal, -1, Player.Backpack.Serial)
+            Items.Move(item, mobile_serial, -1, 0, 0)
+            Misc.Pause(config.dragDelayMilliseconds)
 
 
 Misc.SendMessage(">> train stealing starting up...", colors["notice"])
-train_stealing_run_continuously(packhorse_serial, garlic_id)
+train_stealing_run_continuously(mobile_serial, item_to_steal)
