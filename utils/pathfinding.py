@@ -1,5 +1,8 @@
 # To do - add Z axis (this might be more complicated than it sounds when it comes to pathfinding, but for an item/mob tile check it's fine)
 
+# system packages
+import random
+
 # custom RE packages
 from glossary.colors import colors
 
@@ -37,8 +40,8 @@ config = {
 
 # PATH FINDING
 # defaults: 9000 iterations, 600 distance
-max_iterations = 18000  # anything too high (11k-100k might crash your client ;p
-max_distance = 1200
+max_iterations = 20000  # anything too high (11k-100k might crash your client ;p
+max_distance = 1500
 
 debug = 1  # output messages, 1 is partial feedback and 2 is everything happening during the pathfinding, set it to 0 for peace and quiet!
 maxRetryIterations = 1  # if we get stuck and give up, then try x amount of times to pathfind from the current location
@@ -46,8 +49,8 @@ maxRetryIterations = 1  # if we get stuck and give up, then try x amount of time
 
 # ***************NO TOUCHING BELOW THIS LINE!!!***************
 retryIteration = 0
-longPause = 5000
-shortPause = 100
+longPause = 5000  # not in use
+shortPause = random.randint(50, 150)
 
 
 class Position:

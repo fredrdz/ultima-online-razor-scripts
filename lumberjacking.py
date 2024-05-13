@@ -34,7 +34,7 @@ alert = True
 # ********************
 
 # Parameters
-scanRadius = 30
+scanRadius = 40
 afkGumpID = 408109089
 EquipAxeDelay = 1000
 TimeoutOnWaitAction = 3000
@@ -284,7 +284,7 @@ def CutTree():
         or Journal.SearchByType("There's not enough wood here to harvest.", "System")
         or not Timer.Check("chopTimer")
     ):
-        Misc.Pause(100)
+        Misc.Pause(random.randint(50, 150))
 
     if Journal.SearchByType("There's not enough wood here to harvest.", "System"):
         Misc.SendMessage(">> no wood here", colors["status"])

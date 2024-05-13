@@ -156,8 +156,11 @@ def stealing_run_once():
     Misc.Pause(600)
 
 
-def stealing_run_once_targeted(mobile):
+def stealing_run_once_targeted(mobile, item_list):
+    global steal_priorities
+
     mark = mobile
+    steal_priorities = [item_list]
 
     if mark != None and Player.DistanceTo(mark) < 2:
         snoop_recursive(mark.Backpack, mark)
