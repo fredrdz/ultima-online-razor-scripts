@@ -1,4 +1,5 @@
 import config
+from glossary.gumps import gumps
 
 
 def unequip_hands():
@@ -59,3 +60,11 @@ def equip_right_hand(right_item):
     if right_item:
         Player.EquipItem(right_item)
         Misc.Pause(config.dragDelayMilliseconds)
+
+
+def use_runebook(runebook_serial, slot):
+    runebook = gumps["runebook"]
+    Gumps.ResetGump()
+    Items.UseItem(runebook_serial)
+    Gumps.WaitForGump(runebook.Id, 1500)
+    Gumps.SendAction(runebook.Id, runebook.Options[slot].Id)

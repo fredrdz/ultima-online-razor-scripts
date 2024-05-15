@@ -1,7 +1,7 @@
 # Description: Magery related functions
 
 
-def Recall(rune):
+def RecallRune(rune):
     Spells.CastMagery("Recall")
     Target.WaitForTarget(2000, False)
     Target.TargetExecute(rune)

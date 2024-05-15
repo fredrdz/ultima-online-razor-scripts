@@ -4,10 +4,21 @@
 # Skill: Lumberjacking
 
 # custom RE packages
+import config
 from glossary.colors import colors
-from utils.actions import Bank
+from utils.pathing import (
+    Position,
+    RazorPathing,
+    PlayerDirectionOffset,
+)
+from utils.actions import chat_on_position
+from utils.pathing import get_position
+from utils.item_actions.common import (
+    unequip_hands,
+    equip_left_hand,
+    use_runebook,
+)
 from utils.items import MoveItemsByCount, RestockAgent
-from utils.magery import Recall
 from utils.status import Overweight
 
 # System packages
@@ -23,33 +34,32 @@ from System.Speech.Synthesis import SpeechSynthesizer
 
 
 # ********************
-# you want boards or logs?
-logsToBoards = False
-
 # Trees where there is no longer enough wood to be harvested will not be revisited until this much time has passed
 treeCooldown = 1200000  # 1,200,000 ms is 20 minutes
 
 # Want this script to alert you for humaniods?
 alert = True
+
+logBag = 0x40054709  # Serial of log bag in bank
+bankX = 3699
+bankY = 2520
+runebook = 0x4003B289
+bank_rune = 2
+
+# Define constants for the minimum and maximum values of tree_rune
+MIN_TREE_RUNE = 3
+MAX_TREE_RUNE = 3
+CURRENT_TREE_RUNE = 2
 # ********************
 
 # Parameters
 scanRadius = 40
 afkGumpID = 408109089
-EquipAxeDelay = 1000
 TimeoutOnWaitAction = 3000
-ChopDelay = 1000
-dragDelay = 600
 
 weightLimit = Player.MaxWeight + 30
 backpack = Player.Backpack.Serial
-logBag = 0x40054709  # Serial of log bag in bank
-bankX = 3698
-bankY = 2514
-bankRune = 0x400BAAB7
 
-# rightHand = Player.CheckLayer('RightHand')
-leftHand = Player.CheckLayer("LeftHand")
 axeList = [0x0F49, 0x13FB, 0x0F47, 0x1443, 0x0F45, 0x0F4B, 0x0F43]
 
 logID = 0x1BDD
@@ -120,7 +130,6 @@ treeStaticIDs = [
 # ---------------------------------------------------------------------
 # System Variables
 blockCount = 0
-onLoop = True
 
 
 # Custom Classes
@@ -138,8 +147,58 @@ class Tree:
 
 
 # ---------------------------------------------------------------------
+def RecallNext(tree_rune=3):
+    # calculates the next tree_rune, wrapping around if it exceeds MAX_TREE_RUNE
+    next_tree_rune = MIN_TREE_RUNE + (tree_rune + 1 - MIN_TREE_RUNE) % (
+        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
+    )
+    slot = "Slot %i" % next_tree_rune
+    Misc.SendMessage(">> recalling to next zone", colors["notice"])
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)
+
+
+def RecallCurrent(tree_rune=3):
+    slot = "Slot %i" % tree_rune
+    Misc.SendMessage(">> recalling to current zone", colors["notice"])
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)
+
+
+def RecallPrevious(tree_rune=3):
+    # calculates the previous tree_rune, wrapping around if it goes below MIN_TREE_RUNE
+    previous_tree_rune = MAX_TREE_RUNE - (MAX_TREE_RUNE - tree_rune + 1) % (
+        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
+    )
+    slot = "Slot %i" % previous_tree_rune
+    Misc.SendMessage(">> recalling to previous zone", colors["notice"])
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)
+
+
+def RecallBank(bank_rune=2):
+    slot = "Slot %i" % (bank_rune)
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)
+
+
+# ---------------------------------------------------------------------
+
+
+def Bank(x=0, y=0):
+    if x == 0 or y == 0:
+        bank_position = get_position("no bank configured...")
+    else:
+        bank_position = Position(int(x), int(y))
+
+    if not RazorPathing(bank_position.X, bank_position.Y):
+        Misc.SetSharedValue("pathFindingOverride", (bank_position.X, bank_position.Y))
+        Misc.ScriptRun("pathfinding.py")
+    chat_on_position("bank", bank_position)
+
+
 def DepositInBank():
-    Recall(bankRune)
+    RecallBank(bank_rune)
     Bank(bankX, bankY)
     Journal.Clear()
 
@@ -206,11 +265,12 @@ def MoveToTree():
     Misc.SendMessage(
         ">> moving to tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
     )
+    Misc.Resync()
 
-    chopX = trees[0].x + 1
-    chopY = trees[0].y
-    Misc.SetSharedValue("pathFindingOverride", (chopX, chopY))
-    Misc.ScriptRun("pathfinding.py")
+    chopX, chopY = PlayerDirectionOffset(trees[0].x, trees[0].y)
+    if not RazorPathing(chopX, chopY):
+        Misc.SetSharedValue("pathFindingOverride", (chopX, chopY))
+        Misc.ScriptRun("pathfinding.py")
 
     Timer.Create("path_timeout", 10000)
     while Misc.Distance(Player.Position.X, Player.Position.Y, chopX, chopY) != 0:
@@ -233,9 +293,10 @@ def MoveToTree():
 
 # ---------------------------------------------------------------------
 def CutLogs():
+    EquipAxe()
     for item in Player.Backpack.Contains:
         if item.ItemID == logID:
-            Items.UseItem(axeSerial)
+            Items.UseItem(Player.GetItemOnLayer("LeftHand"))
             Target.WaitForTarget(1000, False)
             Target.TargetExecute(item)
             Misc.Pause(200)
@@ -243,19 +304,21 @@ def CutLogs():
 
 # ---------------------------------------------------------------------
 def EquipAxe():
-    global axeSerial
+    if Player.CheckLayer("RightHand"):
+        unequip_hands()
+    elif Player.CheckLayer("LeftHand"):
+        if not Player.GetItemOnLayer("LeftHand").ItemID in axeList:
+            unequip_hands()
 
-    if not leftHand:
+    if not Player.CheckLayer("LeftHand"):
         for item in Player.Backpack.Contains:
             if item.ItemID in axeList:
-                Player.EquipItem(item.Serial)
-                Misc.Pause(600)
-                axeSerial = Player.GetItemOnLayer("LeftHand").Serial
-    elif Player.GetItemOnLayer("LeftHand").ItemID in axeList:
-        axeSerial = Player.GetItemOnLayer("LeftHand").Serial
-    else:
-        Player.HeadMessage(35, "You must have an axe to chop trees!")
-        Misc.Pause(1000)
+                equip_left_hand(item.Serial)
+                break
+        if not Player.CheckLayer("LeftHand"):
+            Misc.SendMessage(">> no axes found", colors["fatal"])
+            Misc.Beep()
+            sys.exit()
 
 
 # ---------------------------------------------------------------------
@@ -271,6 +334,7 @@ def CutTree():
 
     Journal.Clear()
 
+    EquipAxe()
     Items.UseItem(Player.GetItemOnLayer("LeftHand"))
     Target.WaitForTarget(TimeoutOnWaitAction, True)
     Target.TargetExecute(trees[0].x, trees[0].y, trees[0].z, trees[0].id)
@@ -312,15 +376,15 @@ def CutTree():
         Misc.SendMessage(">> tree change", colors["status"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif Journal.Search("bloodwood"):
-        Player.HeadMessage(1194, "BLOODWOOD!")
+        Misc.SendMessage(">> bloodwood!", colors["success"])
         Timer.Create("chopTimer", 10000)
         CutTree()
     elif Journal.Search("heartwood"):
-        Player.HeadMessage(1193, "HEARTWOOD!")
+        Misc.SendMessage(">> heartwood!", colors["success"])
         Timer.Create("chopTimer", 10000)
         CutTree()
     elif Journal.Search("frostwood"):
-        Player.HeadMessage(1151, "FROSTWOOD!")
+        Misc.SendMessage(">> frostwood!", colors["success"])
         Timer.Create("chopTimer", 10000)
         CutTree()
     else:
@@ -452,16 +516,16 @@ invulFilter.Notorieties = List[Byte](bytes([7]))
 
 Friend.ChangeList("lj")
 Misc.SendMessage(">> lumberjack starting up...", colors["notice"])
-EquipAxe()
 
-while onLoop:
+while not Player.IsGhost:
     Misc.Pause(100)
     trees = []
     ScanStatic()
 
     if not trees or trees.Count == 0:
-        Misc.SendMessage(">> no trees found, waiting...", colors["fail"])
-        Misc.Pause(10000)
+        Misc.SendMessage(">> no trees found", colors["fatal"])
+        Misc.SendMessage(">> going to next zone...", colors["notice"])
+        RecallNext(CURRENT_TREE_RUNE)
         continue
 
     while trees.Count > 0:

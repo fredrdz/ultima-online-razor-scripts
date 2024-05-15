@@ -1,19 +1,15 @@
 from glossary.colors import colors
+from utils.pathing import get_position, wait_on_position
 
 
-def Bank(x, y):
-    Misc.SendMessage(">> waiting for bank", colors["status"])
-    while Player.Position.X != x or Player.Position.Y != y:
-        Misc.Pause(100)
+def chat_on_position(chat_msg, position=None, sys_msg=None):
+    if not position:
+        position = get_position()
 
-    Player.ChatSay(colors["chat"], "bank")
-    Misc.Pause(300)
+    wait_on_position(position)
 
+    if sys_msg:
+        Misc.SendMessage(">> %s" % sys_msg, colors["notice"])
 
-def VendorSell(name, x, y):
-    Misc.SendMessage(">> waiting for selling position", colors["status"])
-    while Player.Position.X != x or Player.Position.Y != y:
-        Misc.Pause(100)
-
-    Player.ChatSay(colors["chat"], name + " sell")
+    Player.ChatSay(colors["chat"], chat_msg)
     Misc.Pause(500)
