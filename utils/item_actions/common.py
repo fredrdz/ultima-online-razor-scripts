@@ -1,6 +1,8 @@
 import config
 from glossary.gumps import gumps
 
+# ---------------------------------------------------------------------
+
 
 def unequip_hands():
     return unequip_left_hand(), unequip_right_hand()
@@ -62,9 +64,48 @@ def equip_right_hand(right_item):
         Misc.Pause(config.dragDelayMilliseconds)
 
 
+# ---------------------------------------------------------------------
+
+
 def use_runebook(runebook_serial, slot):
     runebook = gumps["runebook"]
     Gumps.ResetGump()
     Items.UseItem(runebook_serial)
     Gumps.WaitForGump(runebook.Id, 1500)
     Gumps.SendAction(runebook.Id, runebook.Options[slot].Id)
+    Gumps.CloseGump(runebook.Id)
+
+
+def RecallNext(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
+    # calculates the next tree_rune, wrapping around if it exceeds MAX_TREE_RUNE
+    next_tree_rune = MIN_TREE_RUNE + (tree_rune + 1 - MIN_TREE_RUNE) % (
+        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
+    )
+    slot = "Slot %i" % next_tree_rune
+    Misc.SendMessage(">> recalling to next zone", colors["notice"])
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)
+
+
+def RecallCurrent(runebook, tree_rune=1):
+    slot = "Slot %i" % tree_rune
+    Misc.SendMessage(">> recalling to current zone", colors["notice"])
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)
+
+
+def RecallPrevious(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
+    # calculates the previous tree_rune, wrapping around if it goes below MIN_TREE_RUNE
+    previous_tree_rune = MAX_TREE_RUNE - (MAX_TREE_RUNE - tree_rune + 1) % (
+        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
+    )
+    slot = "Slot %i" % previous_tree_rune
+    Misc.SendMessage(">> recalling to previous zone", colors["notice"])
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)
+
+
+def RecallBank(runebook, bank_rune=1):
+    slot = "Slot %i" % (bank_rune)
+    use_runebook(runebook, slot)
+    Misc.Pause(config.recallDelay + config.shardLatency)

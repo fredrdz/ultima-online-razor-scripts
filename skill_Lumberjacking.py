@@ -1,36 +1,37 @@
-# SCRIPT: lumberjacking.py
-# Author: Talik Starr
-# IN:RISEN
-# Skill: Lumberjacking
+"""
+SCRIPT: skill_Lumberjacking.py
+Author: Talik Starr
+IN:RISEN
+Skill: Lumberjacking
+"""
 
 # custom RE packages
-import config
 from glossary.colors import colors
 from utils.pathing import (
     Position,
     RazorPathing,
     PlayerDirectionOffset,
 )
-from utils.actions import chat_on_position
+from utils.actions import Chat_on_position, audio_say
 from utils.pathing import get_position
 from utils.item_actions.common import (
     unequip_hands,
     equip_left_hand,
-    use_runebook,
+    RecallNext,
+    RecallCurrent,
+    RecallPrevious,
+    RecallBank,
 )
 from utils.items import MoveItemsByCount, RestockAgent
 from utils.status import Overweight
+from utils.gumps import is_afk_gump, get_afk_gump_button_options, solve_afk_gump
 
 # System packages
 import sys
-import random
 from System.Collections.Generic import List
 from System import Byte
 from math import sqrt
-import clr
-
-clr.AddReference("System.Speech")
-from System.Speech.Synthesis import SpeechSynthesizer
+import random
 
 
 # ********************
@@ -54,7 +55,6 @@ CURRENT_TREE_RUNE = 2
 
 # Parameters
 scanRadius = 40
-afkGumpID = 408109089
 TimeoutOnWaitAction = 3000
 
 weightLimit = Player.MaxWeight + 30
@@ -147,44 +147,6 @@ class Tree:
 
 
 # ---------------------------------------------------------------------
-def RecallNext(tree_rune=3):
-    # calculates the next tree_rune, wrapping around if it exceeds MAX_TREE_RUNE
-    next_tree_rune = MIN_TREE_RUNE + (tree_rune + 1 - MIN_TREE_RUNE) % (
-        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
-    )
-    slot = "Slot %i" % next_tree_rune
-    Misc.SendMessage(">> recalling to next zone", colors["notice"])
-    use_runebook(runebook, slot)
-    Misc.Pause(config.recallDelay + config.shardLatency)
-
-
-def RecallCurrent(tree_rune=3):
-    slot = "Slot %i" % tree_rune
-    Misc.SendMessage(">> recalling to current zone", colors["notice"])
-    use_runebook(runebook, slot)
-    Misc.Pause(config.recallDelay + config.shardLatency)
-
-
-def RecallPrevious(tree_rune=3):
-    # calculates the previous tree_rune, wrapping around if it goes below MIN_TREE_RUNE
-    previous_tree_rune = MAX_TREE_RUNE - (MAX_TREE_RUNE - tree_rune + 1) % (
-        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
-    )
-    slot = "Slot %i" % previous_tree_rune
-    Misc.SendMessage(">> recalling to previous zone", colors["notice"])
-    use_runebook(runebook, slot)
-    Misc.Pause(config.recallDelay + config.shardLatency)
-
-
-def RecallBank(bank_rune=2):
-    slot = "Slot %i" % (bank_rune)
-    use_runebook(runebook, slot)
-    Misc.Pause(config.recallDelay + config.shardLatency)
-
-
-# ---------------------------------------------------------------------
-
-
 def Bank(x=0, y=0):
     if x == 0 or y == 0:
         bank_position = get_position("no bank configured...")
@@ -194,11 +156,11 @@ def Bank(x=0, y=0):
     if not RazorPathing(bank_position.X, bank_position.Y):
         Misc.SetSharedValue("pathFindingOverride", (bank_position.X, bank_position.Y))
         Misc.ScriptRun("pathfinding.py")
-    chat_on_position("bank", bank_position)
+    Chat_on_position("bank", bank_position)
 
 
 def DepositInBank():
-    RecallBank(bank_rune)
+    RecallBank(runebook, bank_rune)
     Bank(bankX, bankY)
     Journal.Clear()
 
@@ -402,73 +364,10 @@ def CutTree():
 
 
 # ---------------------------------------------------------------------
-def is_afk_gump():
-    if Gumps.HasGump(afkGumpID):
-        return True
-    return False
-
-
-def get_afk_gump_button_options():
-    gump_text_options = Gumps.LastGumpGetLineList()
-    if gump_text_options:
-        return [str(line) for line in gump_text_options]
-    return None
-
-
-def solve_afk_gump(text_list):
-    result_list = []
-    current_word = ""
-
-    for text in text_list:
-        if isinstance(text, str):
-            text = text.strip()
-            if text:
-                if "rightbutton" in text.lower():
-                    result_list.append("Right Button")
-                elif "wrongbutton" in text.lower():
-                    result_list.append("Wrong Button")
-                else:
-                    current_word += text
-                    if "rightbutton" in current_word.lower():
-                        result_list.append("Right Button")
-                        current_word = ""
-                    elif "wrongbutton" in current_word.lower():
-                        result_list.append("Wrong Button")
-                        current_word = ""
-
-    right_button_index = (
-        result_list.index("Right Button") if "Right Button" in result_list else -1
-    )
-
-    if isinstance(right_button_index, int):
-        if right_button_index != -1:
-            Misc.SendMessage(
-                ">> afk gump -Right Button- found at index: %i" % right_button_index,
-                colors["info"],
-            )
-            Misc.Pause(random.randint(1000, 2000))
-            Gumps.SendAction(afkGumpID, right_button_index)
-            Gumps.CloseGump(afkGumpID)
-            return True
-        else:
-            Misc.SendMessage(
-                ">> afk gump -Right Button- not found; solve manually or die",
-                colors["fatal"],
-            )
-    return False
-
-
-# ---------------------------------------------------------------------
-def say(text):
-    spk = SpeechSynthesizer()
-    spk.Speak(text)
-
-
-# ---------------------------------------------------------------------
 def safteyNet():
     if is_afk_gump():
         Misc.Beep()
-        say("solving AFK Gump")
+        audio_say("solving AFK Gump")
         button_options = get_afk_gump_button_options()
         if button_options:
             if not solve_afk_gump(button_options):
@@ -481,14 +380,14 @@ def safteyNet():
         if toon:
             Misc.Beep()
             Misc.FocusUOWindow()
-            say("someone is here")
+            audio_say("someone is here")
             toonName = Mobiles.Select(toon, "Nearest")
             if toonName:
                 Misc.SendMessage(">> toon near: " + toonName.Name, colors["alert"])
         elif invul:
             Misc.Beep()
             Misc.FocusUOWindow()
-            say("GM here")
+            audio_say("GM here")
             invulName = Mobiles.Select(invul, "Nearest")
             if invulName:
                 Misc.SendMessage(">> invul near:" + invul.Name, colors["alert"])
@@ -525,7 +424,7 @@ while not Player.IsGhost:
     if not trees or trees.Count == 0:
         Misc.SendMessage(">> no trees found", colors["fatal"])
         Misc.SendMessage(">> going to next zone...", colors["notice"])
-        RecallNext(CURRENT_TREE_RUNE)
+        RecallNext(runebook, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE)
         continue
 
     while trees.Count > 0:

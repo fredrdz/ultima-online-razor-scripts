@@ -11,10 +11,6 @@ from utils.magery import Recall
 from utils.status import Overweight
 
 # --- PARAMETERS ---
-vendorX = 3635
-vendorY = 2595
-bankX = 3697
-bankY = 2513
 bankRune = 0x400BAAB7
 
 restockWeight = 75
@@ -90,12 +86,12 @@ def Clubs():
         amount = Items.BackpackCount(craftItem)
         Misc.SendMessage(">> " + str(amount) + " items to sell", colors["status"])
         while Items.BackpackCount(craftItem) > 1:
-            VendorSell("Kenyon", vendorX, vendorY)
+            VendorSell(vendorX, vendorY)
             Misc.Pause(500)
 
     if not Build(craftItem):
         while Items.BackpackCount(craftItem) > 1:
-            VendorSell("Kenyon", vendorX, vendorY)
+            VendorSell(vendorX, vendorY)
             Misc.Pause(500)
         Misc.SendMessage(">> no items could be built", colors["error"])
         Misc.Beep()

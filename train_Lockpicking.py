@@ -1,7 +1,9 @@
-# SCRIPT: lockpicking.py
-# Author: Talik Starr
-# IN:RISEN
-# Skill: Lockpicking
+"""
+SCRIPT: train_Lockpicking.py
+Author: Talik Starr
+IN:RISEN
+Skill: Lockpicking
+"""
 
 import sys
 

@@ -1,3 +1,4 @@
+from System import Int32
 from System.Collections.Generic import List
 from utils.items import myItem
 
@@ -29,8 +30,8 @@ def FindTrashBarrel(Items):
     trashBarrelFilter.Movable = False
     trashBarrelFilter.RangeMax = 0
     trashBarrelFilter.RangeMax = 2
-    trashBarrelFilter.Graphics = List[int]([containers["trash barrel"].itemID])
-    trashBarrelFilter.Hues = List[int]([containers["trash barrel"].color])
+    trashBarrelFilter.Graphics = List[Int32]([containers["trash barrel"].itemID])
+    trashBarrelFilter.Hues = List[Int32]([containers["trash barrel"].color])
 
     trashBarrel = Items.ApplyFilter(trashBarrelFilter)
 
@@ -52,7 +53,7 @@ def FindHatch(Items):
     hatchFilter.Movable = False
     hatchFilter.RangeMax = 0
     hatchFilter.RangeMax = 2
-    hatchFilter.Graphics = List[int]([containers["hatch"].itemID])
+    hatchFilter.Graphics = List[Int32]([containers["hatch"].itemID])
 
     hatch = Items.ApplyFilter(hatchFilter)
 

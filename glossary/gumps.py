@@ -31,6 +31,19 @@ runebookOpts = [
     GumpOption("Slot 16", 92),
 ]
 
+afkOpts = [
+    GumpOption("Button 0", 0),
+    GumpOption("Button 1", 1),
+    GumpOption("Button 2", 2),
+    GumpOption("Button 3", 3),
+    GumpOption("Button 4", 4),
+    GumpOption("Button 5", 5),
+    GumpOption("Button 6", 6),
+    GumpOption("Button 7", 7),
+    GumpOption("Button 8", 8),
+    GumpOption("Button 9", 9),
+]
 gumps = {
     "runebook": Gump("runebook", 1431013363, runebookOpts),
+    "afk": Gump("afk", 408109089, afkOpts),
 }

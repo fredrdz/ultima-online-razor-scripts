@@ -1,3 +1,11 @@
+# custom RE packages
+from glossary.colors import colors
+from glossary.gumps import gumps
+
+# System packages
+import random
+
+
 class GumpSelection:
     gumpID = None
     buttonID = None
@@ -7,6 +15,66 @@ class GumpSelection:
         self.buttonID = buttonID
 
 
+# ---------------------------------------------------------------------
+def is_afk_gump():
+    afk = gumps["afk"]
+    if Gumps.HasGump(afk.Id):
+        return True
+    return False
+
+
+def get_afk_gump_button_options():
+    gump_text_options = Gumps.LastGumpGetLineList()
+    if gump_text_options:
+        return [str(line) for line in gump_text_options]
+    return None
+
+
+def solve_afk_gump(text_list):
+    afk = gumps["afk"]
+    result_list = []
+    current_word = ""
+
+    for text in text_list:
+        if isinstance(text, str):
+            text = text.strip()
+            if text:
+                if "rightbutton" in text.lower():
+                    result_list.append("Right Button")
+                elif "wrongbutton" in text.lower():
+                    result_list.append("Wrong Button")
+                else:
+                    current_word += text
+                    if "rightbutton" in current_word.lower():
+                        result_list.append("Right Button")
+                        current_word = ""
+                    elif "wrongbutton" in current_word.lower():
+                        result_list.append("Wrong Button")
+                        current_word = ""
+
+    right_button_index = (
+        result_list.index("Right Button") if "Right Button" in result_list else -1
+    )
+
+    if isinstance(right_button_index, int):
+        if right_button_index != -1:
+            Misc.SendMessage(
+                ">> afk gump -Right Button- found at index: %i" % right_button_index,
+                colors["info"],
+            )
+            Misc.Pause(random.randint(1000, 2000))
+            Gumps.SendAction(afk.Id, right_button_index)
+            Gumps.CloseGump(afk.Id)
+            return True
+        else:
+            Misc.SendMessage(
+                ">> afk gump -Right Button- not found; solve manually or die",
+                colors["fatal"],
+            )
+    return False
+
+
+# ---------------------------------------------------------------------
 def debug_gump_lines(gump_id):
     if Gumps.HasGump(gump_id):
         gump_lines = Gumps.GetLineList(gump_id)

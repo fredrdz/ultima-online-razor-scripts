@@ -159,6 +159,9 @@ tools = {
     "lockpick": myItem(
         name="lockpick", itemID=0x14FC, color=0x0000, category="tool", weight=1
     ),
+    "pen and ink": myItem(
+        name="pen and ink", itemID=0x0FBF, color=0x0000, category="tool", weight=1
+    ),
     "mapmaker's pen": myItem(
         name="mapmaker's pen", itemID=0x0FBF, color=0x0000, category="tool", weight=1
     ),

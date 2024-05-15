@@ -1,5 +1,5 @@
 """
-SCRIPT: stealing.py
+SCRIPT: skill_Stealing.py
 Author: Talik Starr
 IN:RISEN
 Skill: Stealing

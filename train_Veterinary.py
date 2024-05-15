@@ -1,5 +1,5 @@
 """
-SCRIPT: veterinary.py
+SCRIPT: train_Veterinary.py
 Author: Talik Starr
 IN:RISEN
 Skill: Veterinary

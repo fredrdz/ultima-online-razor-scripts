@@ -1,7 +1,7 @@
 from glossary.items.tools import tools
 from utils.gumps import GumpSelection
 
-cartographyTools = [tools["mapmaker's pen"]]
+cartographyTools = [tools["mapmaker's pen"], tools["pen and ink"]]
 
 
 class CartographyCraftable:

@@ -28,7 +28,7 @@ def FindCarpentryTool(container):
     # Find the tool to craft with
     for tool in carpentryTools:
         tool = FindItem(tool.itemID, container)
-        if tool != None:
+        if tool is not None:
             return tool
 
 
@@ -52,13 +52,29 @@ class CarpentryCraftable(Craftable):
 
 carpentryCraftables = {
     ### Other: Gump Button 1 ###
+    "trash barrel": CarpentryCraftable(
+        name="trash barrel",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 42.6},
+        resourcesNeeded={"boards": 50},
+        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 2)),
+    ),
+    "blank scroll": CarpentryCraftable(
+        name="blank scroll",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 70.0, "Inscription": 45.0},
+        resourcesNeeded={"boards": 1, "spider's silk": 1},
+        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 9)),
+    ),
     "barrel staves": CarpentryCraftable(
         name="barrel staves",
         retainsMark=False,
         retainsColor=True,
         minSkill={"Carpentry": 0.0},
         resourcesNeeded={"boards": 5},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 2)),
+        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 16)),
     ),
     "barrel lid": CarpentryCraftable(
         name="barrel lid",
@@ -66,7 +82,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 11.0},
         resourcesNeeded={"boards": 4},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 9)),
+        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 23)),
     ),
     "short music stand (left)": CarpentryCraftable(
         name="short music stand (left)",
@@ -74,7 +90,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 78.9},
         resourcesNeeded={"boards": 15},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 16)),
+        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 30)),
     ),
     "tall music stand (left)": CarpentryCraftable(
         name="tall music stand (left)",
@@ -82,7 +98,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 81.5},
         resourcesNeeded={"boards": 20},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 23)),
+        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 37)),
     ),
     "easel (south)": CarpentryCraftable(
         name="easel (south)",
@@ -90,16 +106,145 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 86.8},
         resourcesNeeded={"boards": 20},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 30)),
+        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 44)),
     ),
-    ### Furniture: Gump Button 8 ###
+    ### Misc. Add-Ons: Gump Button 8 ###
+    "small bed (south)": CarpentryCraftable(
+        name="small bed (south)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
+        resourcesNeeded={"boards": 100, "cloth": 100},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 2)),
+    ),
+    "small bed (east)": CarpentryCraftable(
+        name="small bed (east)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
+        resourcesNeeded={"boards": 100, "cloth": 100},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 9)),
+    ),
+    "large bed (south)": CarpentryCraftable(
+        name="large bed (south)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
+        resourcesNeeded={"boards": 150, "cloth": 150},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 16)),
+    ),
+    "large bed (east)": CarpentryCraftable(
+        name="large bed (east)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
+        resourcesNeeded={"boards": 150, "cloth": 150},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 23)),
+    ),
+    "dartboard (south)": CarpentryCraftable(
+        name="dartboard (south)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 15.7},
+        resourcesNeeded={"boards": 5},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 30)),
+    ),
+    "dartboard (east)": CarpentryCraftable(
+        name="dartboard (east)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 15.7},
+        resourcesNeeded={"boards": 5},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 37)),
+    ),
+    "bulletin board (east)": CarpentryCraftable(
+        name="bulletin board (east)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 85.0},
+        resourcesNeeded={"boards": 200},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 44)),
+    ),
+    "bulletin board (south)": CarpentryCraftable(
+        name="bulletin board (south)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 85.0},
+        resourcesNeeded={"boards": 200},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 51)),
+    ),
+    "ballot box": CarpentryCraftable(
+        name="ballot box",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 47.3},
+        resourcesNeeded={"boards": 5},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 58)),
+    ),
+    "pentagram": CarpentryCraftable(
+        name="pentagram",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 100.0, "Magery": 75.0},
+        resourcesNeeded={"boards": 100, "ingots": 40},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 65)),
+    ),
+    "abbatoir": CarpentryCraftable(
+        name="abbatoir",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 100.0, "Magery": 50.0},
+        resourcesNeeded={"boards": 100, "ingots": 40},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 72)),
+    ),
+    "stone abbatoir": CarpentryCraftable(
+        name="stone abbatoir",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 115.0, "Magery": 100.0},
+        resourcesNeeded={"boards": 500, "ingots": 500},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 79)),
+    ),
+    "training dummy (east)": CarpentryCraftable(
+        name="training dummy (east)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 68.4, "Tailoring": 50.0},
+        resourcesNeeded={"boards": 55, "cloth": 60},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 2)),
+    ),
+    "training dummy (south)": CarpentryCraftable(
+        name="training dummy (south)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 68.4, "Tailoring": 50.0},
+        resourcesNeeded={"boards": 55, "cloth": 60},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 9)),
+    ),
+    "pickpocket dip (east)": CarpentryCraftable(
+        name="pickpocket dip (east)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 73.6, "Tailoring": 50.0},
+        resourcesNeeded={"boards": 65, "cloth": 60},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 16)),
+    ),
+    "pickpocket dip (south)": CarpentryCraftable(
+        name="pickpocket dip (south)",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 73.6, "Tailoring": 50.0},
+        resourcesNeeded={"boards": 65, "cloth": 60},
+        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 23)),
+    ),
+    ### Furniture: Gump Button 15 ###
     "foot stool": CarpentryCraftable(
         name="foot stool",
         retainsMark=False,
         retainsColor=True,
         minSkill={"Carpentry": 11.0},
         resourcesNeeded={"boards": 9},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 2)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 2)),
     ),
     "stool": CarpentryCraftable(
         name="stool",
@@ -107,7 +252,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 11.0},
         resourcesNeeded={"boards": 9},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 9)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 9)),
     ),
     "straw chair": CarpentryCraftable(
         name="straw chair",
@@ -115,7 +260,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 21.0},
         resourcesNeeded={"boards": 13},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 16)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 16)),
     ),
     "wooden chair": CarpentryCraftable(
         name="wooden chair",
@@ -123,7 +268,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 21.0},
         resourcesNeeded={"boards": 13},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 23)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 23)),
     ),
     "Vesper-style chair": CarpentryCraftable(
         name="Vesper-style chair",
@@ -131,7 +276,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 42.1},
         resourcesNeeded={"boards": 15},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 30)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 30)),
     ),
     "Trinsic-style chair": CarpentryCraftable(
         name="Trinsic-style chair",
@@ -139,7 +284,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 42.1},
         resourcesNeeded={"boards": 13},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 37)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 37)),
     ),
     "wooden bench": CarpentryCraftable(
         name="wooden bench",
@@ -147,7 +292,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 52.6},
         resourcesNeeded={"boards": 17},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 44)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 44)),
     ),
     "wooden throne": CarpentryCraftable(
         name="wooden throne",
@@ -155,7 +300,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 52.6},
         resourcesNeeded={"boards": 17},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 51)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 51)),
     ),
     "Magnicia-style throne": CarpentryCraftable(
         name="Magnicia-style throne",
@@ -163,7 +308,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 73.6},
         resourcesNeeded={"boards": 19},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 58)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 58)),
     ),
     "small table": CarpentryCraftable(
         name="small table",
@@ -171,7 +316,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 42.1},
         resourcesNeeded={"boards": 17},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 65)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 65)),
     ),
     "writing table": CarpentryCraftable(
         name="writing table",
@@ -179,7 +324,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 63.1},
         resourcesNeeded={"boards": 17},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 72)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 72)),
     ),
     "large table": CarpentryCraftable(
         name="large table",
@@ -187,7 +332,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 63.1},
         resourcesNeeded={"boards": 23},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 79)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 79)),
     ),
     "Yew wood table": CarpentryCraftable(
         name="Yew wood table",
@@ -195,7 +340,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 84.2},
         resourcesNeeded={"boards": 27},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 86)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 86)),
     ),
     "elegant low table": CarpentryCraftable(
         name="elegant low table",
@@ -203,7 +348,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 80.0},
         resourcesNeeded={"boards": 35},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 93)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 93)),
     ),
     "plain low table": CarpentryCraftable(
         name="plain low table",
@@ -211,16 +356,16 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 80.0},
         resourcesNeeded={"boards": 35},
-        gumpPath=(GumpSelection(949095101, 8), GumpSelection(949095101, 100)),
+        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 100)),
     ),
-    ### Containers: Gump Button 15 ###
+    ### Containers: Gump Button 22 ###
     "wooden box": CarpentryCraftable(
         name="wooden box",
         retainsMark=False,
         retainsColor=True,
         minSkill={"Carpentry": 21.0},
         resourcesNeeded={"boards": 10},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 2)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 2)),
     ),
     "small crate": CarpentryCraftable(
         name="small crate",
@@ -228,7 +373,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 10.0},
         resourcesNeeded={"boards": 8},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 9)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 9)),
     ),
     "medium crate": CarpentryCraftable(
         name="medium crate",
@@ -236,7 +381,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 31.0},
         resourcesNeeded={"boards": 15},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 16)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 16)),
     ),
     "large crate": CarpentryCraftable(
         name="large crate",
@@ -244,7 +389,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 47.3},
         resourcesNeeded={"boards": 18},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 23)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 23)),
     ),
     "wooden chest": CarpentryCraftable(
         name="wooden chest",
@@ -252,7 +397,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 73.6},
         resourcesNeeded={"boards": 20},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 30)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 30)),
     ),
     "wooden shelf": CarpentryCraftable(
         name="wooden shelf",
@@ -260,7 +405,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 31.5},
         resourcesNeeded={"boards": 25},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 37)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 37)),
     ),
     "armoire (red)": CarpentryCraftable(
         name="armoire (red)",
@@ -268,7 +413,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 84.2},
         resourcesNeeded={"boards": 35},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 44)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 44)),
     ),
     "armoire": CarpentryCraftable(
         name="armoire",
@@ -276,7 +421,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 84.2},
         resourcesNeeded={"boards": 35},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 51)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 51)),
     ),
     "treasure chest (silver)": CarpentryCraftable(
         name="treasure chest",
@@ -291,7 +436,7 @@ carpentryCraftables = {
             "sapphire": 100,
             "forged metal": 5,
         },
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 58)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 58)),
     ),
     "treasure chest (silver and gold)": CarpentryCraftable(
         name="treasure chest",
@@ -306,7 +451,7 @@ carpentryCraftables = {
             "sapphire": 200,
             "forged metal": 10,
         },
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 65)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 65)),
     ),
     "treasure chest (scrolls and potions)": CarpentryCraftable(
         name="treasure chest",
@@ -321,7 +466,7 @@ carpentryCraftables = {
             "sapphire": 200,
             "forged metal": 10,
         },
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 72)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 72)),
     ),
     "gilded wooden chest": CarpentryCraftable(
         name="gilded wooden chest",
@@ -329,7 +474,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 120.0},
         resourcesNeeded={"boards": 1000},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 79)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 79)),
     ),
     "gothic chest": CarpentryCraftable(
         name="gothic chest",
@@ -337,7 +482,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 100.0},
         resourcesNeeded={"boards": 1000},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 86)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 86)),
     ),
     "ornate wooden chest": CarpentryCraftable(
         name="ornate wooden chest",
@@ -345,7 +490,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 120.0},
         resourcesNeeded={"boards": 1000},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 93)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 93)),
     ),
     "wooden footlocker": CarpentryCraftable(
         name="wooden footlocker",
@@ -353,7 +498,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 120.0},
         resourcesNeeded={"boards": 1000},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 100)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 100)),
     ),
     "finished wooden chest": CarpentryCraftable(
         name="finished wooden chest",
@@ -361,7 +506,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 120.0},
         resourcesNeeded={"boards": 1000},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 107)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 107)),
     ),
     "short cabinet": CarpentryCraftable(
         name="short cabinet",
@@ -369,7 +514,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 120.0},
         resourcesNeeded={"boards": 1000},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 114)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 114)),
     ),
     "tall cabinet": CarpentryCraftable(
         name="tall cabinet",
@@ -377,7 +522,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 120.0},
         resourcesNeeded={"boards": 1000},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 121)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 121)),
     ),
     "plain wooden chest": CarpentryCraftable(
         name="plain wooden chest",
@@ -385,7 +530,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 90.0},
         resourcesNeeded={"boards": 30},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 128)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 128)),
     ),
     "red armoire": CarpentryCraftable(
         name="red armoire",
@@ -393,7 +538,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 90.0},
         resourcesNeeded={"boards": 40},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 135)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 135)),
     ),
     "elegant armoire": CarpentryCraftable(
         name="elegant armoire",
@@ -401,7 +546,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 90.0},
         resourcesNeeded={"boards": 40},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 142)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 142)),
     ),
     "maple armoire": CarpentryCraftable(
         name="maple armoire",
@@ -409,7 +554,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 90.0},
         resourcesNeeded={"boards": 40},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 149)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 149)),
     ),
     "cherry armoire": CarpentryCraftable(
         name="cherry armoire",
@@ -417,7 +562,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 90.0},
         resourcesNeeded={"boards": 40},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 156)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 156)),
     ),
     "keg": CarpentryCraftable(
         name="keg",
@@ -425,16 +570,16 @@ carpentryCraftables = {
         retainsColor=False,
         minSkill={"Carpentry": 57.8},
         resourcesNeeded={"barrel staves": 3, "barrel hoops": 1, "barrel lid": 1},
-        gumpPath=(GumpSelection(949095101, 15), GumpSelection(949095101, 163)),
+        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 163)),
     ),
-    ### Weapons and Armor: Gump Button 22 ###
+    ### Weapons and Armor: Gump Button 29 ###
     "shepherd's crook": CarpentryCraftable(
         name="shepherd's crook",
         retainsMark=True,
         retainsColor=True,
         minSkill={"Carpentry": 78.9},
         resourcesNeeded={"boards": 7},
-        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 2)),
+        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 2)),
     ),
     "quarter staff": CarpentryCraftable(
         name="quarter staff",
@@ -442,7 +587,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 73.6},
         resourcesNeeded={"boards": 6},
-        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 9)),
+        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 9)),
     ),
     "gnarled staff": CarpentryCraftable(
         name="gnarled staff",
@@ -450,7 +595,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 78.9},
         resourcesNeeded={"boards": 7},
-        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 16)),
+        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 16)),
     ),
     "wooden shield": CarpentryCraftable(
         name="wooden shield",
@@ -458,7 +603,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 52.6},
         resourcesNeeded={"boards": 9},
-        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 23)),
+        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 23)),
     ),
     "club": CarpentryCraftable(
         name="club",
@@ -466,7 +611,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 28.2},
         resourcesNeeded={"boards": 6},
-        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 30)),
+        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 30)),
     ),
     "fishing pole": CarpentryCraftable(
         name="fishing pole",
@@ -474,16 +619,16 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 68.4, "Tailoring": 40.0},
         resourcesNeeded={"boards": 5, "cloth": 5},
-        gumpPath=(GumpSelection(949095101, 22), GumpSelection(949095101, 37)),
+        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 37)),
     ),
-    ### Instruments: Gump Button 29 ###
+    ### Instruments: Gump Button 36 ###
     "lap harp": CarpentryCraftable(
         name="lap harp",
         retainsMark=True,
         retainsColor=True,
         minSkill={"Carpentry": 63.1, "Musicianship": 45.0},
         resourcesNeeded={"boards": 20, "cloth": 10},
-        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 2)),
+        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 2)),
     ),
     "standing harp": CarpentryCraftable(
         name="standing harp",
@@ -491,7 +636,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 78.9, "Musicianship": 45.0},
         resourcesNeeded={"boards": 35, "cloth": 15},
-        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 9)),
+        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 9)),
     ),
     "drum": CarpentryCraftable(
         name="drum",
@@ -499,7 +644,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 57.8, "Musicianship": 45.0},
         resourcesNeeded={"boards": 20, "cloth": 10},
-        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 16)),
+        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 16)),
     ),
     "lute": CarpentryCraftable(
         name="lute",
@@ -507,7 +652,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 68.4, "Musicianship": 45.0},
         resourcesNeeded={"boards": 25, "cloth": 10},
-        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 23)),
+        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 23)),
     ),
     "tambourine": CarpentryCraftable(
         name="tambourine",
@@ -515,7 +660,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 57.8, "Musicianship": 45.0},
         resourcesNeeded={"boards": 15, "cloth": 10},
-        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 30)),
+        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 30)),
     ),
     "tambourine (tassle)": CarpentryCraftable(
         name="tambourine (tassle)",
@@ -523,7 +668,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 57.8, "Musicianship": 45.0},
         resourcesNeeded={"boards": 15, "cloth": 15},
-        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 37)),
+        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 37)),
     ),
     "bamboo flute": CarpentryCraftable(
         name="bamboo flute",
@@ -531,104 +676,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 80.0, "Musicianship": 45.0},
         resourcesNeeded={"boards": 15},
-        gumpPath=(GumpSelection(949095101, 29), GumpSelection(949095101, 44)),
-    ),
-    ### Misc. Add-Ons: Gump Button 36 ###
-    "small bed (south)": CarpentryCraftable(
-        name="small bed (south)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
-        resourcesNeeded={"boards": 100, "cloth": 100},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 2)),
-    ),
-    "small bed (east)": CarpentryCraftable(
-        name="small bed (east)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
-        resourcesNeeded={"boards": 100, "cloth": 100},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 9)),
-    ),
-    "large bed (south)": CarpentryCraftable(
-        name="large bed (south)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
-        resourcesNeeded={"boards": 150, "cloth": 150},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 16)),
-    ),
-    "large bed (east)": CarpentryCraftable(
-        name="large bed (east)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 94.7, "Tailoring": 75.0},
-        resourcesNeeded={"boards": 150, "cloth": 150},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 23)),
-    ),
-    "dartboard (south)": CarpentryCraftable(
-        name="dartboard (south)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 15.7},
-        resourcesNeeded={"boards": 5},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 30)),
-    ),
-    "dartboard (east)": CarpentryCraftable(
-        name="dartboard (east)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 15.7},
-        resourcesNeeded={"boards": 5},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 37)),
-    ),
-    "bulletin board (east)": CarpentryCraftable(
-        name="bulletin board (east)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 85.0},
-        resourcesNeeded={"boards": 200},
         gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 44)),
-    ),
-    "bulletin board (south)": CarpentryCraftable(
-        name="bulletin board (south)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 85.0},
-        resourcesNeeded={"boards": 200},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 51)),
-    ),
-    "ballot box": CarpentryCraftable(
-        name="ballot box",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 47.3},
-        resourcesNeeded={"boards": 5},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 58)),
-    ),
-    "pentagram": CarpentryCraftable(
-        name="pentagram",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 100.0, "Magery": 75.0},
-        resourcesNeeded={"boards": 100, "ingots": 40},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 65)),
-    ),
-    "abbatoir": CarpentryCraftable(
-        name="abbatoir",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 100.0, "Magery": 50.0},
-        resourcesNeeded={"boards": 100, "ingots": 40},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 72)),
-    ),
-    "stone abbatoir": CarpentryCraftable(
-        name="stone abbatoir",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 115.0, "Magery": 100.0},
-        resourcesNeeded={"boards": 500, "ingots": 500},
-        gumpPath=(GumpSelection(949095101, 36), GumpSelection(949095101, 79)),
     ),
     ### Blacksmithing: Gump Button 43 ###
     "small forge": CarpentryCraftable(
@@ -671,47 +719,14 @@ carpentryCraftables = {
         resourcesNeeded={"boards": 5, "ingots": 150},
         gumpPath=(GumpSelection(949095101, 43), GumpSelection(949095101, 30)),
     ),
-    ### Training: Gump Button 50 ###
-    "training dummy (east)": CarpentryCraftable(
-        name="training dummy (east)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 68.4, "Tailoring": 50.0},
-        resourcesNeeded={"boards": 55, "cloth": 60},
-        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 2)),
-    ),
-    "training dummy (south)": CarpentryCraftable(
-        name="training dummy (south)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 68.4, "Tailoring": 50.0},
-        resourcesNeeded={"boards": 55, "cloth": 60},
-        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 9)),
-    ),
-    "pickpocket dip (east)": CarpentryCraftable(
-        name="pickpocket dip (east)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 73.6, "Tailoring": 50.0},
-        resourcesNeeded={"boards": 65, "cloth": 60},
-        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 16)),
-    ),
-    "pickpocket dip (south)": CarpentryCraftable(
-        name="pickpocket dip (south)",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 73.6, "Tailoring": 50.0},
-        resourcesNeeded={"boards": 65, "cloth": 60},
-        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 23)),
-    ),
-    ### Tailoring and Cooking: Gump Button 57 ###
+    ### Tailoring and Cooking: Gump Button 50 ###
     "spinning wheel (east)": CarpentryCraftable(
         name="spinning wheel (east)",
         retainsMark=False,
         retainsColor=True,
         minSkill={"Carpentry": 73.6, "Tailoring": 65.0},
         resourcesNeeded={"boards": 75, "cloth": 25},
-        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 2)),
+        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 2)),
     ),
     "spinning wheel (south)": CarpentryCraftable(
         name="spinning wheel (south)",
@@ -719,7 +734,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 73.6, "Tailoring": 65.0},
         resourcesNeeded={"boards": 75, "cloth": 25},
-        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 9)),
+        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 9)),
     ),
     "loom (east)": CarpentryCraftable(
         name="loom (east)",
@@ -727,7 +742,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 84.2, "Tailoring": 65.0},
         resourcesNeeded={"boards": 85, "cloth": 25},
-        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 16)),
+        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 16)),
     ),
     "loom (south)": CarpentryCraftable(
         name="loom (south)",
@@ -735,16 +750,16 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 84.2, "Tailoring": 65.0},
         resourcesNeeded={"boards": 85, "cloth": 25},
-        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 23)),
+        gumpPath=(GumpSelection(949095101, 50), GumpSelection(949095101, 23)),
     ),
-    ### Cooking: Gump Button 64 ###
+    ### Cooking: Gump Button 57 ###
     "stone oven (east)": CarpentryCraftable(
         name="stone oven (east)",
         retainsMark=False,
         retainsColor=True,
         minSkill={"Carpentry": 68.4, "Tinkering": 50.0},
         resourcesNeeded={"boards": 85, "ingots": 125},
-        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 2)),
+        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 2)),
     ),
     "stone oven (south)": CarpentryCraftable(
         name="stone oven (south)",
@@ -752,7 +767,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 68.4, "Tinkering": 50.0},
         resourcesNeeded={"boards": 85, "ingots": 125},
-        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 9)),
+        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 9)),
     ),
     "flour mill (east)": CarpentryCraftable(
         name="flour mill (east)",
@@ -760,7 +775,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 94.7, "Tinkering": 50.0},
         resourcesNeeded={"boards": 100, "ingots": 50},
-        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 16)),
+        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 16)),
     ),
     "flour mill (south)": CarpentryCraftable(
         name="flour mill (south)",
@@ -768,7 +783,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 94.7, "Tinkering": 50.0},
         resourcesNeeded={"boards": 100, "ingots": 50},
-        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 23)),
+        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 23)),
     ),
     "water trough (east)": CarpentryCraftable(
         name="water trough (east)",
@@ -776,7 +791,7 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 94.7},
         resourcesNeeded={"boards": 150},
-        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 30)),
+        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 30)),
     ),
     "water trough (south)": CarpentryCraftable(
         name="water trough (south)",
@@ -784,33 +799,55 @@ carpentryCraftables = {
         retainsColor=True,
         minSkill={"Carpentry": 94.7},
         resourcesNeeded={"boards": 150},
+        gumpPath=(GumpSelection(949095101, 57), GumpSelection(949095101, 37)),
+    ),
+    ### Boats: Gump Button 64 ###
+    "small boat": CarpentryCraftable(
+        name="small boat",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 81.6, "Tailoring": 75.0, "Lumberjacking": 75.0},
+        resourcesNeeded={"boards": 425, "cloth": 100},
+        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 2)),
+    ),
+    "small dragon boat": CarpentryCraftable(
+        name="small dragon boat",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 83.0, "Tailoring": 75.0, "Lumberjacking": 75.0},
+        resourcesNeeded={"boards": 450, "cloth": 100},
+        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 9)),
+    ),
+    "medium boat": CarpentryCraftable(
+        name="medium boat",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 84.6, "Tailoring": 80.0, "Lumberjacking": 80.0},
+        resourcesNeeded={"boards": 500, "cloth": 100},
+        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 16)),
+    ),
+    "medium dragon boat": CarpentryCraftable(
+        name="meduim dragon boat",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 84.6, "Tailoring": 80.0, "Lumberjacking": 80.0},
+        resourcesNeeded={"boards": 500, "cloth": 100},
+        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 23)),
+    ),
+    "large boat": CarpentryCraftable(
+        name="large boat",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 90.2, "Tailoring": 85.0, "Lumberjacking": 85.0},
+        resourcesNeeded={"boards": 575, "cloth": 100},
+        gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 30)),
+    ),
+    "large dragon boat": CarpentryCraftable(
+        name="large dragon boat",
+        retainsMark=False,
+        retainsColor=True,
+        minSkill={"Carpentry": 93.5, "Tailoring": 85.0, "Lumberjacking": 85.0},
+        resourcesNeeded={"boards": 600, "cloth": 100},
         gumpPath=(GumpSelection(949095101, 64), GumpSelection(949095101, 37)),
     ),
-    ### Ship Parts: Gump Button 71 ###
-    "ship ribs": CarpentryCraftable(
-        name="ship ribs",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 85.0},
-        resourcesNeeded={"logs": 1000},
-        gumpPath=(GumpSelection(949095101, 71), GumpSelection(949095101, 2)),
-    ),
-    ### Ship Upgrades: Gump Button 78 ###
-    "Crow's Nest": CarpentryCraftable(
-        name="Crow's Nest",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 85.0},
-        resourcesNeeded={"logs": 2000},
-        gumpPath=(GumpSelection(949095101, 78), GumpSelection(949095101, 2)),
-    ),
-    "Experience Boost": CarpentryCraftable(
-        name="Experience Boost",
-        retainsMark=False,
-        retainsColor=True,
-        minSkill={"Carpentry": 85.0},
-        resourcesNeeded={"logs": 2000},
-        gumpPath=(GumpSelection(949095101, 78), GumpSelection(949095101, 9)),
-    ),
-    ### Ships: Gump Button 85 ###
 }
