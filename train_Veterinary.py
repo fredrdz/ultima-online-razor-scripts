@@ -14,10 +14,6 @@ def TrainVeterinary():
     """
     Trains Veterinary to the skill cap
     """
-    if Player.GetRealSkillValue("Veterinary") == Player.GetSkillCap("Veterinary"):
-        Misc.SendMessage(">> maxed out veterinary skill", colors["notice"])
-        return
-
     bandages = FindBandage(Player.Backpack)
 
     if bandages is None:

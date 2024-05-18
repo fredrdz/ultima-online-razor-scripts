@@ -23,10 +23,6 @@ def train_stealing_run_continuously(target_mobile, target_item):
     """
     Misc.SendMessage(">> train stealing starting up...", colors["notice"])
 
-    if Player.GetRealSkillValue("Stealing") == Player.GetSkillCap("Stealing"):
-        Misc.SendMessage(">> maxed out stealing skill", colors["notice"])
-        return
-
     # setup target mobile
     tar_mobile = Mobiles.FindBySerial(target_mobile)
     if tar_mobile:
@@ -69,6 +65,10 @@ def train_stealing_run_continuously(target_mobile, target_item):
             return_item = Items.FindByID(tar_item.ItemID, -1, Player.Backpack.Serial)
             Items.Move(return_item, tar_mobile, -1, 0, 0)
             Misc.Pause(config.dragDelayMilliseconds)
+
+    if Player.GetRealSkillValue("Stealing") == Player.GetSkillCap("Stealing"):
+        Misc.SendMessage(">> maxed out stealing skill", colors["notice"])
+        return
 
 
 train_stealing_run_continuously(mobile_serial, item_to_steal)

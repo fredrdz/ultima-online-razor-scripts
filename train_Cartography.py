@@ -5,13 +5,28 @@ IN:RISEN
 Skill: Cartography
 """
 
+import config
 from glossary.items.containers import FindTrashBarrel
 from glossary.items.miscellaneous import miscellaneous
 from glossary.crafting.cartography import cartographyTools, cartographyCraftables
 from glossary.colors import colors
-from utils.items import FindItem, FindNumberOfItems, MoveItem
+from utils.items import FindItem, FindNumberOfItems, MoveItem, RestockAgent
 from utils.status import Overweight
-from utils.actions import Sell_items
+from utils.actions import Chat_on_position, Sell_items
+from utils.item_actions.common import RecallBank, use_runebook
+from utils.pathing import Position, RazorPathing, get_position
+
+character_name = "Talik Starr"
+young_runebook_serial = config.characters[character_name]["young_runebook"]["serial"]
+bank_rune = config.characters[character_name]["young_runebook"]["bank_rune_slot"]
+vendor_rune = 4  # slot number in runebook, 1 of 16
+
+# map x/y coordinates
+vendorName = "Gage"
+sellX = 1417
+sellY = 1755
+bankX = 3699
+bankY = 2520
 
 
 def FindTool(container):
@@ -24,6 +39,26 @@ def FindTool(container):
         tool = FindItem(tool.itemID, container)
         if tool is not None:
             return tool
+
+
+def Bank(x=0, y=0):
+    if x == 0 or y == 0:
+        bank_position = get_position("no bank configured...")
+    else:
+        bank_position = Position(int(x), int(y))
+
+    if not RazorPathing(bank_position.X, bank_position.Y):
+        Misc.SetSharedValue("pathFindingOverride", (bank_position.X, bank_position.Y))
+        Misc.ScriptRun("pathfinding.py")
+    Chat_on_position("bank", bank_position)
+
+
+def Restock():
+    RestockAgent("cartography")
+    Misc.Pause(3000)
+
+    RestockAgent("recall")
+    Misc.Pause(3000)
 
 
 def TrainCartography(throwAwayMaps=True):
@@ -86,13 +121,21 @@ def TrainCartography(throwAwayMaps=True):
         Gumps.WaitForGump(949095101, 2000)
         Gumps.SendAction(949095101, 0)
 
-        if not throwAwayMaps and Overweight(Player.MaxWeight + 30):
-            Sell_items(miscellaneous["map"].itemID)
+        mapID = miscellaneous["map"].itemID
+        items = FindNumberOfItems(mapID, Player.Backpack)
+        if not throwAwayMaps:
+            if Overweight(Player.MaxWeight) or items[mapID] > 100:
+                # use_runebook(young_runebook_serial, vendor_rune)
+                # Misc.Pause(config.recallDelay + config.shardLatency)
+                Sell_items(vendorName, mapID, sellX, sellY)
+                # RecallBank(young_runebook_serial, bank_rune)
+                # Bank(bankX, bankY)
+                # Restock()
         else:
-            map = FindItem(miscellaneous["map"].itemID, Player.Backpack)
+            map = FindItem(mapID, Player.Backpack)
             if map is not None and throwAwayMaps:
                 MoveItem(Items, Misc, map, trashBarrel)
 
 
 # Start Cartography training
-TrainCartography(throwAwayMaps=True)
+TrainCartography(throwAwayMaps=False)

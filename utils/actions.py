@@ -19,7 +19,7 @@ def Chat_on_position(chat_msg, position=None, sys_msg=None):
         Misc.SendMessage(">> %s" % sys_msg, colors["notice"])
 
     Player.ChatSay(colors["chat"], chat_msg)
-    Misc.Pause(500)
+    Misc.Pause(1000)
 
 
 def audio_say(text):
@@ -27,12 +27,12 @@ def audio_say(text):
     spk.Speak(text)
 
 
-def Sell_items(craftItem=None, sellX=0, sellY=0):
+def Sell_items(name="Vendor", craftItem=None, x=0, y=0):
     if craftItem is None:
         Misc.SendMessage(">> no item(s) to sell", colors["fail"])
         return
 
-    if sellX == 0 and sellY == 0:
+    if x == 0 and y == 0:
         sell_position = get_position("no vendor sell position configured...")
     else:
         sell_position = Position(int(x), int(y))
@@ -41,4 +41,4 @@ def Sell_items(craftItem=None, sellX=0, sellY=0):
     if count > 1:
         Misc.SendMessage(">> " + str(count) + " items to sell", colors["status"])
         while Items.BackpackCount(craftItem) > 1:
-            Chat_on_position("Vendor Sell", sell_position)
+            Chat_on_position("%s Sell" % name, sell_position)

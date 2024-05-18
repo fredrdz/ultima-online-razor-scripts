@@ -67,7 +67,8 @@ def equip_right_hand(right_item):
 # ---------------------------------------------------------------------
 
 
-def use_runebook(runebook_serial, slot):
+def use_runebook(runebook_serial, slot_number=1):
+    slot = "Slot %i" % slot_number
     runebook = gumps["runebook"]
     Gumps.ResetGump()
     Items.UseItem(runebook_serial)
@@ -81,16 +82,14 @@ def RecallNext(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
     next_tree_rune = MIN_TREE_RUNE + (tree_rune + 1 - MIN_TREE_RUNE) % (
         MAX_TREE_RUNE - MIN_TREE_RUNE + 1
     )
-    slot = "Slot %i" % next_tree_rune
     Misc.SendMessage(">> recalling to next zone", colors["notice"])
-    use_runebook(runebook, slot)
+    use_runebook(runebook, next_tree_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)
 
 
 def RecallCurrent(runebook, tree_rune=1):
-    slot = "Slot %i" % tree_rune
     Misc.SendMessage(">> recalling to current zone", colors["notice"])
-    use_runebook(runebook, slot)
+    use_runebook(runebook, tree_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)
 
 
@@ -99,13 +98,11 @@ def RecallPrevious(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
     previous_tree_rune = MAX_TREE_RUNE - (MAX_TREE_RUNE - tree_rune + 1) % (
         MAX_TREE_RUNE - MIN_TREE_RUNE + 1
     )
-    slot = "Slot %i" % previous_tree_rune
     Misc.SendMessage(">> recalling to previous zone", colors["notice"])
-    use_runebook(runebook, slot)
+    use_runebook(runebook, previous_tree_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)
 
 
 def RecallBank(runebook, bank_rune=1):
-    slot = "Slot %i" % (bank_rune)
-    use_runebook(runebook, slot)
+    use_runebook(runebook, bank_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)

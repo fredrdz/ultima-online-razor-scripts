@@ -8,12 +8,12 @@ Skill: Lumberjacking
 # custom RE packages
 from glossary.colors import colors
 from utils.pathing import (
+    get_position,
     Position,
     RazorPathing,
     PlayerDirectionOffset,
 )
 from utils.actions import Chat_on_position, audio_say
-from utils.pathing import get_position
 from utils.item_actions.common import (
     unequip_hands,
     equip_left_hand,
@@ -164,17 +164,13 @@ def DepositInBank():
     Bank(bankX, bankY)
     Journal.Clear()
 
-    RestockAgent("lj")
-    Misc.Pause(3000)
-
     RestockAgent("recall")
     Misc.Pause(3000)
 
     CutLogs()
-    Misc.Pause(3000)
 
     MoveItemsByCount(bankDeposit, backpack, logBag)
-    Misc.Pause(3000)
+    Misc.Pause(1000)
 
     if Journal.SearchByType("That container cannot hold more weight.", "System"):
         Misc.SendMessage(">> bank is full", colors["fatal"])
@@ -261,7 +257,7 @@ def CutLogs():
             Items.UseItem(Player.GetItemOnLayer("LeftHand"))
             Target.WaitForTarget(1000, False)
             Target.TargetExecute(item)
-            Misc.Pause(200)
+            Misc.Pause(300)
 
 
 # ---------------------------------------------------------------------

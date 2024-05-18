@@ -1,3 +1,4 @@
+from System import Int32
 from System.Collections.Generic import List
 
 
@@ -15,13 +16,14 @@ class Animal:
         self.color = color
         self.minTamingSkill = minTamingSkill
         self.maxTamingSkill = maxTamingSkill
+        self.packType = packType
 
 
 animals = {
     # Organized based on taming difficulty with no previous owners according to uo.com, then alphabetically by and within species
     # https://uo.com/wiki/ultima-online-wiki/skills/animal-taming/tameable-creatures/#mobs
     ### Min skill 0, Max skill 10 ###
-    "dog": Animal("dog", 0x00D9, 0x0000, 0, 10, ["canine"]),
+    "dog": Animal("dog", 0x00D9, 0x0000, 23.1, 41.1, ["canine"]),
     "gorilla": Animal("gorilla", 0x001D, 0x0000, 0, 10, None),
     "parrot": Animal("parrot", 0x033F, 0x0000, 0, 10, None),
     # Rabbits
@@ -86,7 +88,7 @@ animals = {
     "horse2": Animal("horse", 0x00E2, 0x0000, 40, 50, None),
     "horse3": Animal("horse", 0x00CC, 0x0000, 40, 50, None),
     "horse4": Animal("horse", 0x00E4, 0x0000, 40, 50, None),
-    "horsePack": Animal("pack horse", 0x0123, 0x0000, 40, 50, None),
+    "horsePack": Animal("pack horse", 0x0123, 0x0000, 11.1, 23.1, None),
     "horsePalomino": None,
     "horseWar": None,
     # Llamas
@@ -108,7 +110,7 @@ animals = {
     "walrus": Animal("walrus", 0x00DD, 0x0000, 50, 60, None),
     ### Min skill 60, Max skill 70 ###
     "alligator": Animal("alligator", 0x00CA, 0x0000, 60, 70, None),
-    "brown bear": Animal("brown bear", 0x00A7, 0x0000, 60, 70, ["bear"]),
+    "brown bear": Animal("brown bear", 0x00A7, 0x0000, 41.1, 70, ["bear"]),
     "high plains boura": None,  # Not on UO Forever
     "cougar": Animal("cougar", 0x003F, 0x0000, 60, 70, ["feline"]),
     "paralithode": None,  # Not on UO Forever
@@ -144,7 +146,6 @@ animals = {
     "osseinRam": None,
     "frost spider": Animal("frost spider", 0x0014, 0x0000, 90, 100, None),
     "giant toad": Animal("giant toad", 0x0050, 0x0000, 90, 100, None),
-    "unicorn": None,
     "giant ice worm": Animal("giant ice worm", 0x0050, 0x0000, 90, 100, None),
     ### Min skill 100, Max skill 110 ###
     # Drakes
@@ -224,10 +225,10 @@ def GetAnimalIDsAtOrOverTamingDifficulty(minimumTamingDifficulty):
     """
     global animals
 
-    animalList = List[int]()
+    animalList = List[Int32]()
     for animal in animals:
         if (
-            not animals[animal] == None
+            animals[animal] is not None
             and not animalList.Contains(animals[animal].mobileID)
             and animals[animal].minTamingSkill >= minimumTamingDifficulty
         ):

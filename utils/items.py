@@ -44,7 +44,7 @@ def MoveItemsByCount(itemListByID, srcContainer, dstContainer):
                 item_amount = containerItem.Amount
                 Items.Move(containerItem, dstContainer, item_amount)
                 # wait for the move to complete
-                Misc.Pause(config.dragDelayMilliseconds)
+                Misc.Pause(config.dragDelayMilliseconds + config.shardLatency)
                 total_moved_count += item_amount
                 moved_items_count[item_name] = item_amount
         else:
@@ -57,7 +57,7 @@ def MoveItemsByCount(itemListByID, srcContainer, dstContainer):
                 amount_to_move = min(item_amount, count - items_found)
                 Items.Move(containerItem, dstContainer, amount_to_move)
                 # wait for the move to complete
-                Misc.Pause(config.dragDelayMilliseconds)
+                Misc.Pause(config.dragDelayMilliseconds + config.shardLatency)
                 items_found += 1
                 total_moved_count += amount_to_move
                 moved_items_count[item_name] = (
