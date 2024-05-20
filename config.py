@@ -2,7 +2,6 @@ characters = {
     "Talik Starr": {
         "young_runebook": {
             "serial": 0x4003B289,
-            "bank_rune_slot": 2,
         },
     }
 }

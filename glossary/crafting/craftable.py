@@ -1,11 +1,11 @@
 class Craftable:
-    name = None
-    minSkill = None
-    resourcesNeeded = None
-    gumpPath = None
+    Name = None
+    MinSkill = None
+    ResourcesNeeded = None
+    GumpPath = None
 
-    def __init__ ( self, name, minSkill, resourcesNeeded, gumpPath ):
-        self.name = name
-        self.minSkill = minSkill
-        self.resourcesNeeded = resourcesNeeded
-        self.gumpPath = gumpPath
+    def __init__(self, Name, MinSkill, ResourcesNeeded, GumpPath):
+        self.Name = Name
+        self.MinSkill = MinSkill
+        self.ResourcesNeeded = ResourcesNeeded
+        self.GumpPath = GumpPath

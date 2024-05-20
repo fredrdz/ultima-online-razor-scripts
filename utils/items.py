@@ -118,7 +118,7 @@ def FindItem(itemID, container, color=-1, ignoreContainer=[]):
             "Unknown argument type for itemID passed to FindItem().", itemID, container
         )
 
-    if foundItem != None:
+    if foundItem is not None:
         return foundItem
 
     subcontainers = [
@@ -128,7 +128,7 @@ def FindItem(itemID, container, color=-1, ignoreContainer=[]):
     ]
     for subcontainer in subcontainers:
         foundItem = FindItem(itemID, subcontainer, color, ignoreContainer)
-        if foundItem != None:
+        if foundItem is not None:
             return foundItem
 
 

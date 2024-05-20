@@ -170,7 +170,8 @@ def TrainAnimalTaming():
                     Misc.PetRename(animalBeingTamed, renameTamedAnimalsTo)
                 if Player.Followers > numberOfFollowersToKeep:
                     # Release recently tamed animal
-                    Player.ChatSay(colors["chat"], "All Release")
+                    Player.ChatSay(colors["chat"], "%s Release" % animalBeingTamed.Name)
+                    Misc.Pause(500)
                 # Misc.IgnoreObject(animalBeingTamed)
                 animalBeingTamed = None
                 timesTried = 0
@@ -195,16 +196,22 @@ def TrainAnimalTaming():
                 timesTried = 0
                 Timer.Create("animalTamingTimer", 1)
                 tameHandled = True
+            elif Journal.SearchByType("That animal looks tame already.", "System"):
+                Player.ChatSay(colors["chat"], "All Release")
+                Misc.Pause(500)
+                animalBeingTamed = None
+                timesTried = 0
+                Timer.Create("animalTamingTimer", 1)
+                tameHandled = True
             elif (
-                Journal.SearchByName(
-                    "You have no chance of taming this creature", animalBeingTamed.Name
+                Journal.SearchByType(
+                    "You have no chance of taming this creature", "System"
                 )
                 or Journal.SearchByType("Target cannot be seen", "System")
                 or Journal.SearchByName(
                     "This animal has had too many owners and is too upset for you to tame.",
                     animalBeingTamed.Name,
                 )
-                or Journal.SearchByType("That animal looks tame already.", "System")
                 or Journal.SearchByType(
                     "You do not have a clear path to the animal you are taming, and must cease your attempt.",
                     "System",
@@ -212,7 +219,6 @@ def TrainAnimalTaming():
             ):
                 # Ignore the object and set to None so that another animal can be found
                 # Misc.IgnoreObject(animalBeingTamed)
-                Player.ChatSay(colors["chat"], "All Release")
                 animalBeingTamed = None
                 timesTried = 0
                 Timer.Create("animalTamingTimer", 1)
