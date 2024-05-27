@@ -6,11 +6,13 @@ Skill: Fletching
 """
 
 import config
+import Items, Player, Gumps, Misc, Target
 from glossary.items.containers import FindTrashBarrel
 from glossary.crafting.fletching import (
     CheckResources,
     GetCraftable,
     fletchingTools,
+    fletchingGump,
 )
 from glossary.colors import colors
 from utils.items import FindItem, FindNumberOfItems, MoveItem, RestockAgent
@@ -33,23 +35,15 @@ bankY = None
 bank_rune = 1
 vendor_rune = 4
 
-# tries to import from config
-# example:
-# characters = {
-#     "Talik Starr": {
-#         "young_runebook": {
-#             "serial": 0x4003B289,
-#         },
-#     }
-# }
-character_name = "Talik Starr"
-runebook_name = "young_runebook"
-
 # ---------------------------------------------------------------------
 # do not edit below this line
-character = config.characters.get(character_name, {})
-runebook = character.get(runebook_name, {})
-runebook_serial = runebook.get("serial", 0)
+if not Misc.CheckSharedValue("young_runebook"):
+    Misc.ScriptRun("_startup.py")
+
+if Misc.CheckSharedValue("young_runebook"):
+    runebook_serial = Misc.ReadSharedValue("young_runebook")
+else:
+    runebook_serial = Target.PromptTarget(">> target your runebook", colors["notice"])
 
 
 def FindTool(container):
@@ -95,7 +89,7 @@ def TrainFletching(throwAwayItems=True):
         return
 
     if throwAwayItems:
-        trashBarrel = FindTrashBarrel(Items)
+        trashBarrel = FindTrashBarrel()
         if trashBarrel is None:
             Misc.SendMessage(">> no trash barrel nearby...", colors["fatal"])
             Misc.SendMessage(

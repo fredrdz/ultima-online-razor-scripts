@@ -1,3 +1,4 @@
+import Player, Misc
 from glossary.colors import colors
 from glossary.crafting.craftable import Craftable
 from glossary.items import weapons

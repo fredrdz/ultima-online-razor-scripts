@@ -62,7 +62,7 @@ def GetEnemies(
     Returns a list of the nearby enemies with the specified notorieties
     """
 
-    if Mobiles == None:
+    if Mobiles is None:
         raise ValueError("Mobiles was not passed to GetEnemies")
 
     enemyFilter = Mobiles.Filter()

@@ -1,10 +1,3 @@
-characters = {
-    "Talik Starr": {
-        "young_runebook": {
-            "serial": 0x4003B289,
-        },
-    }
-}
 # change depending on the latency to your UO shard
 shardLatency = 100
 journalEntryDelayMilliseconds = 150

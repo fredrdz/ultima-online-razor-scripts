@@ -1,11 +1,11 @@
 """
-Author: Aga - original author of the uosteam script
-Other Contributors: TheWarDoctor95 - converted to Razor Enhanced script
-Last Contribution By: TheWarDoctor95 - March 19, 2019
-
-Description: Tames nearby animals to train Animal Taming to GM
+SCRIPT: train_AnimalTaming.py
+Author: Talik Starr
+IN:RISEN
+Skill: Animal Taming
 """
 
+import Journal, Player, Misc, Mobiles, Target, Timer
 from System import Int32
 from System.Collections.Generic import List
 
@@ -18,7 +18,7 @@ from glossary import tameables
 renameTamedAnimalsTo = "bob"
 # Add any name of pets to ignore
 petsToIgnore = [
-    "Magmaguard",
+    "SpiritAirlines",
 ]
 # Change to the number of followers you'd like to keep.
 # The script will auto-release the most recently tamed animal if the follower number exceeds this number
@@ -27,7 +27,7 @@ numberOfFollowersToKeep = 1
 # Set to the maximum number of times to attempt to tame a single animal. 0 == attempt until tamed
 maximumTameAttempts = 0
 # Set the minimum taming difficulty to use when finding animals to tame
-minimumTamingDifficulty = 31
+minimumTamingDifficulty = 75
 # Change depending on the latency to your UO shard
 journalEntryDelayMilliseconds = 100
 targetClearDelayMilliseconds = 100
@@ -76,30 +76,30 @@ def TrainAnimalTaming():
     Trains Animal Taming to GM
     """
 
-    # User variables
+    # user variables
     global renameTamedAnimalsTo
     global numberOfFollowersToKeep
     global maximumTameAttempts
     global journalEntryDelayMilliseconds
     global targetClearDelayMilliseconds
 
-    # Script variables
+    # script variables
     global animalTamingTimerMilliseconds
 
-    # Initialize variables
+    # initialize variables
     animalBeingTamed = None
     tameHandled = False
     tameOngoing = False
     timesTried = 0
 
-    # Initialize skill timers
+    # initialize skill timers
     Timer.Create("animalTamingTimer", 1)
 
-    # Initialize the journal and ignore object list
+    # initialize the journal and ignore object list
     Journal.Clear()
     Misc.ClearIgnore()
 
-    # Toggle war mode to make sure the player isn't going to kill the animal being tamed
+    # toggle war mode to make sure the player isn't going to kill the animal being tamed
     Player.SetWarMode(True)
     Player.SetWarMode(False)
 
@@ -108,7 +108,7 @@ def TrainAnimalTaming():
     ) < Player.GetSkillCap("Animal Taming"):
         if (
             animalBeingTamed is not None
-            and Mobiles.FindBySerial(animalBeingTamed.Serial) == None
+            and Mobiles.FindBySerial(animalBeingTamed.Serial) is None
         ):
             Misc.SendMessage("Animal was killed or disappeared")
             animalBeingTamed = None
@@ -124,11 +124,12 @@ def TrainAnimalTaming():
             animalBeingTamed = None
             timesTried = 0
 
-        # If there is no animal being tamed, try to find an animal to tame
+        # if there is no animal being tamed, try to find an animal to tame
         if animalBeingTamed is None:
             animalBeingTamed = FindAnimalToTame()
             if animalBeingTamed is None:
-                # No animals in the area. Pause for a while so that this is constantly running until something is available to tame
+                # no animals in the area
+                # pause for a while so that this is constantly running until something is available to tame
                 Misc.Pause(1000)
                 continue
             else:
@@ -136,26 +137,26 @@ def TrainAnimalTaming():
                     animalBeingTamed, colors["status"], "Found animal to tame"
                 )
 
-        # Tame the animal if a tame is not currently being attempted and enough time has passed since last using Animal Taming
+        # tame the animal if a tame is not currently being attempted and enough time has passed since last using Animal Taming
         if not tameOngoing and not Timer.Check("animalTamingTimer"):
-            # Clear any previously selected target and the target queue
+            # clear any previously selected target and the target queue
             Target.ClearLastandQueue()
-            # Wait for the target to finish clearing
+            # wait for the target to finish clearing
             Misc.Pause(targetClearDelayMilliseconds)
 
-            # Hey, we're finally using the Animal Taming skill! 'bout time!
+            # use taming skill
             Player.UseSkill("Animal Taming")
             Target.WaitForTarget(2000, False)
             Target.TargetExecute(animalBeingTamed)
 
-            # Check if Animal Taming was successfully triggered
+            # check if Animal Taming was successfully triggered
             if Journal.SearchByType("Tame which animal?", "System"):
                 timesTried += 1
 
-                # Restart the timer so that it will go off when we'll be able to use the skill again
+                # restart the timer so that it will go off when we'll be able to use the skill again
                 Timer.Create("animalTamingTimer", animalTamingTimerMilliseconds)
 
-                # Set tameOngoing to true to start the journal checks that will handle the result of the taming
+                # set tameOngoing to true to start the journal checks that will handle the result of the taming
                 tameOngoing = True
             else:
                 continue
@@ -165,11 +166,11 @@ def TrainAnimalTaming():
                 "The %s accepts you as its master." % animalBeingTamed.Name,
                 "System",
             ) or Journal.SearchByType("That wasn't even challenging.", "System"):
-                # Animal was successfully tamed
+                # animal was successfully tamed
                 if animalBeingTamed.Name != renameTamedAnimalsTo:
                     Misc.PetRename(animalBeingTamed, renameTamedAnimalsTo)
                 if Player.Followers > numberOfFollowersToKeep:
-                    # Release recently tamed animal
+                    # release recently tamed animal
                     Player.ChatSay(colors["chat"], "%s Release" % animalBeingTamed.Name)
                     Misc.Pause(500)
                 # Misc.IgnoreObject(animalBeingTamed)
@@ -191,7 +192,7 @@ def TrainAnimalTaming():
                     "Someone else is already taming this", animalBeingTamed.Name
                 )
             ):
-                # Animal moved too far away, set to None so that another animal can be found
+                # animal moved too far away, set to None so that another animal can be found
                 animalBeingTamed = None
                 timesTried = 0
                 Timer.Create("animalTamingTimer", 1)
@@ -208,16 +209,16 @@ def TrainAnimalTaming():
                     "You have no chance of taming this creature", "System"
                 )
                 or Journal.SearchByType("Target cannot be seen", "System")
-                or Journal.SearchByName(
+                or Journal.SearchByType(
                     "This animal has had too many owners and is too upset for you to tame.",
-                    animalBeingTamed.Name,
+                    "System",
                 )
                 or Journal.SearchByType(
                     "You do not have a clear path to the animal you are taming, and must cease your attempt.",
                     "System",
                 )
             ):
-                # Ignore the object and set to None so that another animal can be found
+                # ignore the object and set to None so that another animal can be found
                 # Misc.IgnoreObject(animalBeingTamed)
                 animalBeingTamed = None
                 timesTried = 0
@@ -229,7 +230,7 @@ def TrainAnimalTaming():
                 tameHandled = False
                 tameOngoing = False
 
-        # Wait a little bit so that the while loop doesn't consume as much CPU
+        # wait a little bit so that the while loop doesn't consume as much CPU
         Misc.Pause(100)
 
         if Player.GetRealSkillValue("Animal Taming") == Player.GetSkillCap(

@@ -1,3 +1,4 @@
+import Items
 from System import Int32
 from System.Collections.Generic import List
 from utils.items import myItem
@@ -18,7 +19,7 @@ containers = {
 }
 
 
-def FindTrashBarrel(Items):
+def FindTrashBarrel():
     """
     Locates a trash barrel within reach
     """
@@ -41,7 +42,7 @@ def FindTrashBarrel(Items):
         return trashBarrel[0]
 
 
-def FindHatch(Items):
+def FindHatch():
     """
     Locates a hatch within reach
     """

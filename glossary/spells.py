@@ -1,4 +1,4 @@
-from items.reagents import reagents
+from glossary.items.reagents import reagents
 
 spellReagents = {
     # First Circle
@@ -250,7 +250,7 @@ spells = {
     "Feeblemind": SpellInfo(
         "Feeblemind", 1, spellReagents["Feeblemind"], 4, 0.0, 0.5, 500
     ),
-    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.5, 500),
+    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.5, 700),
     "Magic Arrow": SpellInfo(
         "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 0.5, 500
     ),
@@ -264,7 +264,7 @@ spells = {
     # Second Circle
     "Agility": SpellInfo("Agility", 2, spellReagents["Agility"], 6, 0.0, 0.75, 750),
     "Cunning": SpellInfo("Cunning", 2, spellReagents["Cunning"], 6, 0.0, 0.75, 750),
-    "Cure": SpellInfo("Cure", 2, spellReagents["Cure"], 6, 0.0, 0.75, 750),
+    "Cure": SpellInfo("Cure", 2, spellReagents["Cure"], 6, 0.0, 0.75, 1000),
     "Harm": SpellInfo("Harm", 2, spellReagents["Harm"], 6, 0.0, 0.75, 750),
     "Magic Trap": SpellInfo(
         "Magic Trap", 2, spellReagents["Magic Trap"], 6, 0.0, 0.75, 750
@@ -401,7 +401,7 @@ spells = {
         2250,
     ),
     "Summon Daemon": SpellInfo(
-        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 2.25, 2250
+        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 2.25, 4250
     ),
     "Summon Earth Elemental": SpellInfo(
         "Summon Earth Elemental",

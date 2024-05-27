@@ -5,6 +5,7 @@ IN:RISEN
 Skill: Veterinary
 """
 
+import Items, Player, Misc, Mobiles, Target
 from config import targetClearDelayMilliseconds
 from glossary.items.healing import FindBandage
 from glossary.colors import colors
