@@ -171,4 +171,8 @@ tools = {
     "skinning knife": myItem(
         name="skinning knife", itemID=0x0EC4, color=0x0000, category="tool", weight=1
     ),
+    # Fletching
+    "arrow fletching": myItem(
+        name="arrow fletching", itemID=0x1022, color=0x0000, category="tool", weight=2
+    ),
 }

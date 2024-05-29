@@ -1,13 +1,8 @@
+import Items, Misc, Restock, SellAgent
 import config
 
 
 class myItem:
-    name = None
-    itemID = None
-    color = None
-    category = None
-    weight = None
-
     def __init__(self, name, itemID, color, category, weight):
         self.name = name
         self.itemID = itemID
@@ -79,9 +74,23 @@ def MoveItemsByCount(itemListByID, srcContainer, dstContainer):
     return total_moved_count == sum(count for _, count in itemListByID)
 
 
-def RestockAgent(list):
+def EnableSellingAgent(list: str):
+    if not isinstance(list, str):
+        raise TypeError("The 'list' parameter must be a string.")
+
+    SellAgent.ChangeList(list)
+    if SellAgent.Status() is False:
+        SellAgent.Enable()
+
+
+def RestockAgent(list: str):
+    if not isinstance(list, str):
+        raise TypeError("The 'list' parameter must be a string.")
+
     Restock.ChangeList(list)
     Restock.FStart()
+    while Restock.Status():
+        Misc.Pause(100)
 
 
 # ---------------------------------------------------------------------

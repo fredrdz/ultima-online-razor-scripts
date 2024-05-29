@@ -1,3 +1,4 @@
+import PathFinding, Player, Misc, Target
 from glossary.colors import colors
 
 
@@ -29,16 +30,20 @@ class Position:
 # ---------------------------------------------------------------------
 
 
-def wait_on_position(position=None):
-    if not position:
-        position = get_position()
+def IsPosition(x=0, y=0):
+    return Player.Position.X == x and Player.Position.Y == y
+
+
+def Wait_on_position(pos=None):
+    if not pos:
+        pos = Get_position()
 
     Misc.SendMessage(">> waiting until location reached...", colors["status"])
-    while Player.Position.X != position.X or Player.Position.Y != position.Y:
+    while not IsPosition(pos.X, pos.Y):
         Misc.Pause(100)
 
 
-def get_position(sys_msg=None):
+def Get_position(sys_msg=None):
     if sys_msg:
         Misc.SendMessage(">> %s" % sys_msg, colors["notice"])
 

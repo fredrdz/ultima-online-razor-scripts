@@ -3,9 +3,11 @@ SCRIPT: train_Cartography.py
 Author: Talik Starr
 IN:RISEN
 Skill: Cartography
+TODO: use new utils/glossary changes, currently broken
 """
 
 import config
+import Gumps, Items, Player, Misc
 from glossary.items.containers import FindTrashBarrel
 from glossary.items.miscellaneous import miscellaneous
 from glossary.crafting.cartography import cartographyTools, cartographyCraftables
@@ -14,7 +16,7 @@ from utils.items import FindItem, FindNumberOfItems, MoveItem, RestockAgent
 from utils.status import Overweight
 from utils.actions import Chat_on_position, Sell_items
 from utils.item_actions.common import RecallBank, use_runebook
-from utils.pathing import Position, RazorPathing, get_position
+from utils.pathing import Position, RazorPathing, Get_position
 
 character_name = "Talik Starr"
 young_runebook_serial = config.characters[character_name]["young_runebook"]["serial"]
@@ -43,7 +45,7 @@ def FindTool(container):
 
 def Bank(x=0, y=0):
     if x == 0 or y == 0:
-        bank_position = get_position("no bank configured...")
+        bank_position = Get_position("no bank configured...")
     else:
         bank_position = Position(int(x), int(y))
 
@@ -75,8 +77,9 @@ def TrainCartography(throwAwayMaps=True):
         Misc.SendMessage(">> no tools to train with", colors["fatal"])
         return
 
+    trashBarrel = None
     if throwAwayMaps:
-        trashBarrel = FindTrashBarrel(Items)
+        trashBarrel = FindTrashBarrel()
         if trashBarrel is None:
             Misc.SendMessage(">> no trash barrel nearby...", colors["fatal"])
             Misc.SendMessage(
@@ -113,9 +116,9 @@ def TrainCartography(throwAwayMaps=True):
             return
 
         Items.UseItem(tool)
-        for path in itemToCraft.gumpPath:
-            Gumps.WaitForGump(path.gumpID, 2000)
-            Gumps.SendAction(path.gumpID, path.buttonID)
+        for path in itemToCraft.GumpPath:
+            Gumps.WaitForGump(path.GumpID, 2000)
+            Gumps.SendAction(path.GumpID, path.ButtonID)
 
         # wait for crafting to finish and close the gump
         Gumps.WaitForGump(949095101, 2000)
@@ -127,7 +130,7 @@ def TrainCartography(throwAwayMaps=True):
             if Overweight(Player.MaxWeight) or items[mapID] > 100:
                 # use_runebook(young_runebook_serial, vendor_rune)
                 # Misc.Pause(config.recallDelay + config.shardLatency)
-                Sell_items(vendorName, mapID, sellX, sellY)
+                Sell_items((sellX, sellY), vendorName, mapID)
                 # RecallBank(young_runebook_serial, bank_rune)
                 # Bank(bankX, bankY)
                 # Restock()

@@ -6,6 +6,7 @@ Skill: Stealing
 """
 
 import config
+import Items, Player, Misc, Mobiles, Target
 from glossary.colors import colors
 from skill_Stealing import stealing_run_once_targeted
 from utils.item_actions.common import unequip_hands

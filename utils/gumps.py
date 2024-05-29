@@ -1,4 +1,5 @@
 # custom RE packages
+import Gumps, Misc
 from glossary.colors import colors
 from glossary.gumps import gumps
 
@@ -7,12 +8,9 @@ import random
 
 
 class GumpSelection:
-    gumpID = None
-    buttonID = None
-
-    def __init__(self, gumpID, buttonID):
-        self.gumpID = gumpID
-        self.buttonID = buttonID
+    def __init__(self, GumpID, ButtonID):
+        self.GumpID = GumpID
+        self.ButtonID = ButtonID
 
 
 # ---------------------------------------------------------------------
@@ -89,7 +87,7 @@ def debug_last_gump_lines():
     last_gump_line_list = Gumps.LastGumpGetLineList()
     if last_gump_line_list:
         Misc.SendMessage(
-            ">> debug -- last gump line list: " + last_gump_line,
+            ">> debug -- last gump line list: " + last_gump_line_list,
             colors["debug"],
         )
         for last_gump_line in last_gump_line_list:

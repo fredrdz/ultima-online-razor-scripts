@@ -50,4 +50,18 @@ miscellaneous = {
         category="generic",
         weight=1,
     ),
+    "arrow shaft": myItem(
+        name="arrow shaft",
+        itemID=0x0000,
+        color=0x0000,
+        category="generic",
+        weight=1,
+    ),
+    "feather": myItem(
+        name="feather",
+        itemID=0x0000,
+        color=0x0000,
+        category="generic",
+        weight=1,
+    ),
 }

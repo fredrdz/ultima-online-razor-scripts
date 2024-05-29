@@ -89,9 +89,6 @@ weapons = {
     ),
     # Ranged
     "bow": myItem(name="bow", itemID=0x13B2, color=0x0000, category="weapon", weight=6),
-    "TODO: compound bow": myItem(
-        name="broadsword", itemID=0x0000, color=0x0000, category="weapon", weight=0
-    ),
     "crossbow": myItem(
         name="crossbow", itemID=0x0F50, color=0x0000, category="weapon", weight=7
     ),

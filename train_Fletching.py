@@ -5,35 +5,54 @@ IN:RISEN
 Skill: Fletching
 """
 
+# system packages
+import sys
+
+# custom RE packages
 import config
 import Items, Player, Gumps, Misc, Target
 from glossary.items.containers import FindTrashBarrel
 from glossary.crafting.fletching import (
-    CheckResources,
+    HasResources,
     GetCraftable,
     fletchingTools,
     fletchingGump,
 )
 from glossary.colors import colors
-from utils.items import FindItem, FindNumberOfItems, MoveItem, RestockAgent
+from utils.items import (
+    FindItem,
+    FindNumberOfItems,
+    MoveItem,
+    MoveItemsByCount,
+    RestockAgent,
+    EnableSellingAgent,
+)
 from utils.status import Overweight
 from utils.actions import Chat_on_position, Sell_items
 from utils.item_actions.common import RecallBank, use_runebook
-from utils.pathing import Position, RazorPathing, get_position
+from utils.pathing import IsPosition, RazorPathing
 
 # ---------------------------------------------------------------------
 # script configuration; modify these per your requirements
 
 # map x/y coordinates
-vendorName = "Vendor"
-sellX = None
-sellY = None
-bankX = None
-bankY = None
+vendorName = "Lazarus"
+sellX = 1470
+sellY = 1581
+bankX = 1424
+bankY = 1683
 
 # slot number in runebook, 1 of 16
 bank_rune = 1
-vendor_rune = 4
+vendor_rune = 3
+
+# bank restocking and depositing config
+playerBag = Player.Backpack.Serial
+bankBag = 0x40054709
+goldID = 0x0EED
+bankDepositItems = [
+    (goldID, -1),
+]
 
 # ---------------------------------------------------------------------
 # do not edit below this line
@@ -58,24 +77,52 @@ def FindTool(container):
             return tool
 
 
-def Bank(x=0, y=0):
-    if x == 0 or y == 0:
-        bank_position = get_position("no bank configured...")
-    else:
-        bank_position = Position(int(x), int(y))
+def VendorSell(craftItemID):
+    if not IsPosition(sellX, sellY):
+        use_runebook(runebook_serial, vendor_rune)
+        Misc.Pause(config.recallDelay + config.shardLatency)
 
-    if not RazorPathing(bank_position.X, bank_position.Y):
-        Misc.SetSharedValue("pathFindingOverride", (bank_position.X, bank_position.Y))
-        Misc.ScriptRun("pathfinding.py")
-    Chat_on_position("bank", bank_position)
+    # wait a second for NPCs to load
+    Misc.Pause(1000)
+
+    if Sell_items(vendorName, craftItemID) is False:
+        Misc.SendMessage(">> encountered an error", colors["fatal"])
+        sys.exit()
+
+
+def Bank(x=0, y=0):
+    if IsPosition(x, y) is False:
+        if RazorPathing(x, y) is False:
+            Misc.SetSharedValue("pathFindingOverride", (x, y))
+            Misc.ScriptRun("pathfinding.py")
+
+    Chat_on_position("bank", (x, y))
 
 
 def Restock():
     RestockAgent("fletching")
-    Misc.Pause(3000)
-
     RestockAgent("recall")
-    Misc.Pause(3000)
+
+
+def BankDepositAndRestockForItem(itemName, x=0, y=0):
+    # go to the bank
+    if not IsPosition(x, y):
+        RecallBank(runebook_serial, bank_rune)
+    # use bank
+    Bank(bankX, bankY)
+    # deposit items in bank bag
+    MoveItemsByCount(bankDepositItems, playerBag, bankBag)
+    # get bank bag as an item class
+    bankBagAsItem = Items.FindBySerial(bankBag)
+    if bankBagAsItem.IsInBank is False:
+        Misc.SendMessage(">> bank bag not in bank", colors["fatal"])
+        sys.exit()
+    # check for craftable item resources in bank bag; restock
+    if HasResources(itemName, bankBagAsItem) is False:
+        Misc.SendMessage(">> out of resources in bank bag", colors["fatal"])
+        sys.exit()
+    else:
+        Restock()
 
 
 def TrainFletching(throwAwayItems=True):
@@ -88,6 +135,7 @@ def TrainFletching(throwAwayItems=True):
         Misc.SendMessage(">> no tools to train with", colors["fatal"])
         return
 
+    trashBarrel = None
     if throwAwayItems:
         trashBarrel = FindTrashBarrel()
         if trashBarrel is None:
@@ -107,36 +155,46 @@ def TrainFletching(throwAwayItems=True):
                 return
 
         # select the item to craft
-        if Player.GetSkillValue("Fletching") < 50.0:
-            itemName = "shafts"
-        elif Player.GetSkillValue("Fletching") < 65.0:
-            itemName = "bow"
+        itemName = str("")
+        if Player.GetSkillValue("Fletching") < 60.0:
+            itemName = str("bow")
+        elif Player.GetSkillValue("Fletching") < 80.0:
+            itemName = str("crossbow")
         elif Player.GetSkillValue("Fletching") < 100:
-            itemName = "xbow"
+            itemName = str("heavy crossbow")
 
-        # check if we have enough resources to craft the item
-        if CheckResources(itemName) is False:
-            return
+        # set craftable item parameters
+        craftable = GetCraftable(itemName)
+        craftItem = craftable.Item
+        craftItemID = craftItem.itemID
+        craftItemWeight = craftItem.weight
+        craftItemMaxCountByWeight = Player.MaxWeight - 30 // craftItemWeight
+
+        # check if we have enough resources in player backpack
+        if HasResources(itemName) is False:
+            Misc.SendMessage(">> out of resources in player bag", colors["fail"])
+            if Items.BackpackCount(craftItemID) > 0:
+                VendorSell(craftItemID)
+            BankDepositAndRestockForItem(itemName, bankX, bankY)
 
         Items.UseItem(tool)
-        for path in itemToCraft.gumpPath:
-            Gumps.WaitForGump(path.gumpID, 2000)
-            Gumps.SendAction(path.gumpID, path.buttonID)
+
+        # craft the item
+        for path in craftable.GumpPath:
+            Gumps.WaitForGump(path.GumpID, 5000)
+            Gumps.SendAction(path.GumpID, path.ButtonID)
 
         # wait for crafting to finish and close the gump
-        Gumps.WaitForGump(fletchingGump, 2000)
+        Gumps.WaitForGump(fletchingGump, 5000)
         Gumps.SendAction(fletchingGump, 0)
 
-        craftItemID = GetCraftable(itemName).Item.itemID
         itemCount = FindNumberOfItems(craftItemID, Player.Backpack)
         if not throwAwayItems:
-            if Overweight(Player.MaxWeight) or itemCount[craftItemID] > 100:
-                use_runebook(runebook_serial, vendor_rune)
-                Misc.Pause(config.recallDelay + config.shardLatency)
-                Sell_items(vendorName, craftItemID, sellX, sellY)
-                RecallBank(runebook_serial, bank_rune)
-                Bank(bankX, bankY)
-                Restock()
+            if (
+                Overweight(Player.MaxWeight + 30)
+                or itemCount[craftItemID] > craftItemMaxCountByWeight
+            ):
+                VendorSell(craftItemID)
         else:
             foundItem = FindItem(craftItemID, Player.Backpack)
             if foundItem is not None:
@@ -148,4 +206,5 @@ def TrainFletching(throwAwayItems=True):
 
 
 # Start Cartography training
+EnableSellingAgent("fletching")
 TrainFletching(throwAwayItems=False)
