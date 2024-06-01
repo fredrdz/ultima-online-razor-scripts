@@ -41,7 +41,7 @@ config = {
 # PATH FINDING
 # defaults: 9000 iterations, 600 distance
 max_iterations = 9000  # anything too high (11k-100k might crash your client ;p
-max_distance = 800
+max_distance = 600
 
 debug = 1  # output messages, 1 is partial feedback and 2 is everything happening during the pathfinding, set it to 0 for peace and quiet!
 maxRetryIterations = 1  # if we get stuck and give up, then try x amount of times to pathfind from the current location

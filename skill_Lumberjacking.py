@@ -5,14 +5,20 @@ IN:RISEN
 Skill: Lumberjacking
 """
 
+# System packages
+import sys
+from System.Collections.Generic import List
+from System import Byte
+from math import sqrt
+import random
+
 # custom RE packages
 import Friend, Items, Journal, Player, Misc, Mobiles, Statics, Target, Timer
 from glossary.colors import colors
 from utils.pathing import (
-    Get_position,
-    Position,
+    IsPosition,
+    PlayerDiagonalOffset,
     RazorPathing,
-    PlayerDirectionOffset,
 )
 from utils.actions import Chat_on_position, Audio_say
 from utils.item_actions.common import (
@@ -27,13 +33,6 @@ from utils.items import MoveItemsByCount, RestockAgent
 from utils.status import Overweight
 from utils.gumps import is_afk_gump, get_afk_gump_button_options, solve_afk_gump
 
-# System packages
-import sys
-from System.Collections.Generic import List
-from System import Byte
-from math import sqrt
-import random
-
 
 # ********************
 # Trees where there is no longer enough wood to be harvested will not be revisited until this much time has passed
@@ -41,6 +40,8 @@ treeCooldown = 1200000  # 1,200,000 ms is 20 minutes
 
 # Want this script to alert you for humaniods?
 alert = True
+# Want this script to run away from bad guys?
+runaway = False
 
 logBag = 0x40054709  # Serial of log bag in bank
 bankX = 3699
@@ -128,18 +129,10 @@ treeStaticIDs = [
     0x0DA8,
 ]
 
+
 # ---------------------------------------------------------------------
-# System Variables
-blockCount = 0
-
-
 # Custom Classes
 class Tree:
-    x = None
-    y = None
-    z = None
-    id = None
-
     def __init__(self, x, y, z, id):
         self.x = x
         self.y = y
@@ -149,26 +142,32 @@ class Tree:
 
 # ---------------------------------------------------------------------
 def Bank(x=0, y=0):
-    if x == 0 or y == 0:
-        bank_position = Get_position("no bank configured...")
-    else:
-        bank_position = Position(int(x), int(y))
+    if not IsPosition(x, y):
+        if RazorPathing(x, y) is False:
+            Misc.SetSharedValue("pathFindingOverride", (x, y))
+            Misc.ScriptRun("pathfinding.py")
 
-    if not RazorPathing(bank_position.X, bank_position.Y):
-        Misc.SetSharedValue("pathFindingOverride", (bank_position.X, bank_position.Y))
-        Misc.ScriptRun("pathfinding.py")
-    Chat_on_position("bank", bank_position)
+    Chat_on_position("bank", (x, y))
 
 
-def DepositInBank():
-    RecallBank(runebook, bank_rune)
-    Bank(bankX, bankY)
+def DepositInBank(x=0, y=0):
+    # go to the bank
+    if not IsPosition(x, y):
+        RecallBank(runebook, bank_rune)
+    Bank(x, y)
     Journal.Clear()
 
+    # restock and wait a bit before chopping logs
     RestockAgent("recall")
-    CutLogs()
+    Misc.Pause(1000)
+
+    # some chopping if logs in player bag
+    while Items.BackpackCount(logID) > 0:
+        CutLogs()
+
     MoveItemsByCount(bankDeposit, backpack, logBag)
 
+    # fatal error if bank is full
     if Journal.SearchByType("That container cannot hold more weight.", "System"):
         Misc.SendMessage(">> bank is full", colors["fatal"])
         sys.exit()
@@ -222,14 +221,19 @@ def MoveToTree():
     )
     Misc.Resync()
 
-    chopX, chopY = PlayerDirectionOffset(trees[0].x, trees[0].y)
+    chopOffset = PlayerDiagonalOffset(trees[0].x, trees[0].y)
+    if not chopOffset:
+        return False
+
+    chopX, chopY = chopOffset
     if not RazorPathing(chopX, chopY):
         Misc.SetSharedValue("pathFindingOverride", (chopX, chopY))
         Misc.ScriptRun("pathfinding.py")
 
     Timer.Create("path_timeout", 10000)
     while Misc.Distance(Player.Position.X, Player.Position.Y, chopX, chopY) != 0:
-        Misc.Pause(100)
+        SafteyNet()
+        Misc.Pause(random.randint(50, 150))
         if not Timer.Check("path_timeout"):
             if Misc.ScriptStatus("pathfinding.py"):
                 Misc.ScriptStop("pathfinding.py")
@@ -262,7 +266,7 @@ def EquipAxe():
     if Player.CheckLayer("RightHand"):
         unequip_hands()
     elif Player.CheckLayer("LeftHand"):
-        if not Player.GetItemOnLayer("LeftHand").ItemID in axeList:
+        if Player.GetItemOnLayer("LeftHand").ItemID not in axeList:
             unequip_hands()
 
     if not Player.CheckLayer("LeftHand"):
@@ -278,7 +282,6 @@ def EquipAxe():
 
 # ---------------------------------------------------------------------
 def CutTree():
-    global blockCount
     if Target.HasTarget():
         Misc.SendMessage(">> detected target cursor, refreshing...", colors["notice"])
         Target.Cancel()
@@ -303,6 +306,7 @@ def CutTree():
         or Journal.SearchByType("There's not enough wood here to harvest.", "System")
         or not Timer.Check("chopTimer")
     ):
+        SafteyNet()
         Misc.Pause(random.randint(50, 150))
 
     if Journal.SearchByType("There's not enough wood here to harvest.", "System"):
@@ -310,23 +314,11 @@ def CutTree():
         Misc.SendMessage(">> tree change", colors["status"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif Journal.Search("That is too far away"):
-        blockCount = blockCount + 1
-        Journal.Clear()
-        if blockCount > 1:
-            blockCount = 0
-            Misc.SendMessage(">> blocked; cannot target", colors["warning"])
-            Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
-        else:
-            CutTree()
+        Misc.SendMessage(">> blocked; cannot target", colors["warning"])
+        Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif Journal.Search("Target cannot be seen"):
-        blockCount = blockCount + 1
-        Journal.Clear()
-        if blockCount > 1:
-            blockCount = 0
-            Misc.SendMessage(">> blocked; cannot target", colors["warning"])
-            Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
-        else:
-            CutTree()
+        Misc.SendMessage(">> blocked; cannot target", colors["warning"])
+        Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif not Timer.Check("chopTimer"):
         Misc.SendMessage(">> tree change", colors["status"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
@@ -347,17 +339,23 @@ def CutTree():
 
 
 # ---------------------------------------------------------------------
-# def filterItem(id, range=2, movable=True):
-#     fil = Items.Filter()
-#     fil.Movable = movable
-#     fil.RangeMax = range
-#     fil.Graphics = List[int](id)
-#     list = Items.ApplyFilter(fil)
-#     return list
+def IsEnemy():
+    enemies = Mobiles.ApplyFilter(enemyFilter)
+    if not enemies or len(enemies) == 0:
+        return False
+
+    nearestEnemy = Mobiles.Select(enemies, "Nearest")
+
+    Mobiles.Message(
+        nearestEnemy,
+        colors["warning"],
+        ">> enemy detected",
+    )
+
+    return True
 
 
-# ---------------------------------------------------------------------
-def safteyNet():
+def SafteyNet():
     if is_afk_gump():
         Misc.Beep()
         Audio_say("solving AFK Gump")
@@ -366,6 +364,12 @@ def safteyNet():
             if not solve_afk_gump(button_options):
                 Misc.FocusUOWindow()
                 sys.exit()
+
+    if runaway is True:
+        if IsEnemy() is True:
+            Misc.Beep()
+            Audio_say("enemy detected")
+            RecallNext(runebook, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE)
 
     if alert:
         toon = Mobiles.ApplyFilter(toonFilter)
@@ -390,6 +394,17 @@ def safteyNet():
 
 # ---------------------------------------------------------------------
 # main process
+enemyFilter = Mobiles.Filter()
+enemyFilter.Enabled = True
+enemyFilter.RangeMin = -1
+enemyFilter.RangeMax = -1
+enemyFilter.Poisoned = -1
+enemyFilter.IsHuman = -1
+enemyFilter.IsGhost = False
+enemyFilter.Warmode = -1
+enemyFilter.Friend = False
+enemyFilter.Paralized = -1
+enemyFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
 
 toonFilter = Mobiles.Filter()
 toonFilter.Enabled = True
@@ -421,9 +436,8 @@ while not Player.IsGhost:
         continue
 
     while trees.Count > 0:
-        safteyNet()
         if Overweight(weightLimit):
-            DepositInBank()
+            DepositInBank(bankX, bankY)
             break
         if MoveToTree():
             CutTree()

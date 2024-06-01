@@ -104,7 +104,7 @@ animals = {
     "rideable wolf": Animal("rideable wolf", 0x0115, 0x0000, 40, 50, ["canine"]),
     ### Min skill 50, Max skill 60 ###
     "black bear": Animal("black bear", 0x00D3, 0x0000, 50, 60, ["bear"]),
-    "polar bear": Animal("polar bear", 0x00D5, 0x0000, 50, 60, ["bear"]),
+    "polar bear": Animal("polar bear", 0x00D5, 0x0000, 78.1, 100, ["bear"]),
     "deathwatch beetle": None,
     "llama": Animal("llama", 0x00DC, 0x0000, 50, 60, None),
     "walrus": Animal("walrus", 0x00DD, 0x0000, 50, 60, None),
@@ -164,7 +164,7 @@ animals = {
     "ridgeback": Animal("ridgeback", 0x00BB, 0x0000, 100, 110, None),
     "savage ridgeback": Animal("savage ridgeback", 0x00BC, 0x0000, 100, 110, None),
     "slith": None,
-    "dire wolf": Animal("dire wolf", 0x0017, 0x0000, 100, 110, ["canine"]),
+    "dire wolf": Animal("dire wolf", 0x0017, 0x0000, 83.1, 100, ["canine"]),
     ### Min skill 110, Max skill 120 ###
     "beetleDeath": None,
     "beetleFire": None,

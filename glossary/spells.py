@@ -250,7 +250,7 @@ spells = {
     "Feeblemind": SpellInfo(
         "Feeblemind", 1, spellReagents["Feeblemind"], 4, 0.0, 0.5, 500
     ),
-    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.5, 700),
+    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.5, 500),
     "Magic Arrow": SpellInfo(
         "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 0.5, 500
     ),
@@ -300,7 +300,7 @@ spells = {
     ),
     "Curse": SpellInfo("Curse", 4, spellReagents["Curse"], 11, 24.0, 1.25, 1250),
     "Fire Field": SpellInfo(
-        "Fire Field", 4, spellReagents["Fire Field"], 11, 24.0, 1.25, 1250
+        "Fire Field", 4, spellReagents["Fire Field"], 11, 24.0, 1.25, 2000
     ),
     "Greater Heal": SpellInfo(
         "Greater Heal", 4, spellReagents["Greater Heal"], 11, 24.0, 1.25, 1250
@@ -401,7 +401,7 @@ spells = {
         2250,
     ),
     "Summon Daemon": SpellInfo(
-        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 2.25, 4250
+        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 2.25, 4000
     ),
     "Summon Earth Elemental": SpellInfo(
         "Summon Earth Elemental",

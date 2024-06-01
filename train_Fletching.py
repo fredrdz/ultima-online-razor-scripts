@@ -161,6 +161,7 @@ def TrainFletching(throwAwayItems=True):
         elif Player.GetSkillValue("Fletching") < 80.0:
             itemName = str("crossbow")
         elif Player.GetSkillValue("Fletching") < 100:
+            sys.exit()
             itemName = str("heavy crossbow")
 
         # set craftable item parameters
@@ -181,11 +182,11 @@ def TrainFletching(throwAwayItems=True):
 
         # craft the item
         for path in craftable.GumpPath:
-            Gumps.WaitForGump(path.GumpID, 5000)
+            Gumps.WaitForGump(path.GumpID, 3000)
             Gumps.SendAction(path.GumpID, path.ButtonID)
 
         # wait for crafting to finish and close the gump
-        Gumps.WaitForGump(fletchingGump, 5000)
+        Gumps.WaitForGump(fletchingGump, 10000)
         Gumps.SendAction(fletchingGump, 0)
 
         itemCount = FindNumberOfItems(craftItemID, Player.Backpack)

@@ -1,4 +1,4 @@
-import PathFinding, Player, Misc, Target
+import Items, Mobiles, PathFinding, Player, Misc, Statics, Target
 from glossary.colors import colors
 
 
@@ -92,6 +92,108 @@ def PlayerDirectionOffset(x, y):
         tY = y
 
     return tX, tY
+
+
+def PlayerDiagonalOffset(x=0, y=0):
+    position_range = GetDiagonalCoordsOfPosition(x, y)
+
+    for pos in position_range:
+        if CheckTile(pos[0], pos[1]):
+            return (pos[0], pos[1])
+
+    return None
+
+
+def GetDiagonalCoordsOfPosition(x=0, y=0):
+    _out = []
+
+    # calculate diagonal tuples of coordinates around position within 2 spaces
+    for dx in [-2, -1, 1, 2]:
+        for dy in [-2, -1, 1, 2]:
+            if abs(dx) == abs(dy):  # ensure it's a diagonal
+                _out.append((x + dx, y + dy))
+
+    return _out
+
+
+# ---------------------------------------------------------------------
+def CheckTile(tile_x, tile_y, config=None):
+    # Default config
+    default_config = {
+        "search_statics": True,  # look for blockable statics like trees, rocks (not blocked by sittable tree trunks) etc...
+        "player_house_filter": True,  # avoid player houses - make this False if you need to use inside a large open player house room without walls
+        "items_filter": {
+            "Enabled": True,  # look for items which may block the tile, chests, tables (but is also stopped by objects like chairs and cups) etc...
+        },
+        "mobiles_filter": {
+            "Enabled": True,  # look for MOBS which may block the tile (lambs, ancient dragons) etc...
+        },
+    }
+
+    # Use default config if none or empty config is provided
+    if not config:
+        config = default_config
+    else:
+        # Merge provided config with default config
+        config = {**default_config, **config}
+
+    # Init
+    flag_name = "Impassable"
+
+    # Filter to get all items
+    if config.get("items_filter", {}).get("Enabled"):
+        items_filter = Items.Filter()
+        items_filter.Enabled = True
+        items = Items.ApplyFilter(items_filter)
+        # Check if any items are on the tile
+        for item in items:
+            if (
+                item.Position.X == tile_x
+                and item.Position.Y == tile_y
+                and item.OnGround
+                and item.Visible
+                and item.Name != "nodraw"
+            ):
+                return False  # Tile is blocked by an item
+
+    # Filter to get all mobiles
+    if config.get("mobiles_filter", {}).get("Enabled"):
+        mobiles_filter = Mobiles.Filter()
+        mobiles_filter.Enabled = True
+        mobiles = Mobiles.ApplyFilter(mobiles_filter)
+        # Check if any mobiles are on the tile
+        for mobile in mobiles:
+            if (
+                mobile.Position.X == tile_x
+                and mobile.Position.Y == tile_y
+                and mobile.Visible
+            ):
+                return False  # Tile is blocked by a mobile
+
+    # Check for statics and houses on the tile
+    if config.get("search_statics", False):
+        static_land = Statics.GetLandID(tile_x, tile_y, Player.Map)
+        if Statics.GetLandFlag(static_land, flag_name):
+            return False  # Tile is blocked by a static
+
+        static_tile = Statics.GetStaticsTileInfo(tile_x, tile_y, Player.Map)
+        if len(static_tile) > 0:
+            for idx, static in enumerate(static_tile):
+                if Statics.GetTileFlag(static.StaticID, flag_name):
+                    return False  # Tile is blocked by a static
+
+    if config.get("player_house_filter", False):
+        is_blocked_by_house = Statics.CheckDeedHouse(tile_x, tile_y)
+        if is_blocked_by_house:
+            return False  # Tile is blocked by a house
+
+    # Tile is passable because it's not blocked
+    return True
+
+
+# Usage
+# is_passable = CheckTile(Player.Position.X + 1, Player.Position.Y)  # For one tile east
+# Misc.SendMessage(f"is_passable = {is_passable}")  # Prints True if the tile is passable, False otherwise
 
 
 # ---------------------------------------------------------------------
