@@ -6,25 +6,11 @@ from glossary.items.miscellaneous import miscellaneous
 from utils.items import FindItem, FindNumberOfItems
 from glossary.items.tools import tools
 from glossary.items.boards import boards
-from glossary.items.logs import logs
 from utils.gumps import GumpSelection
 
+fletchName = "Fletching"
 fletchingGump = 949095101
 fletchingTools = [tools["arrow fletching"]]
-
-
-def FindFletchingTool(container):
-    """
-    Searches for a fletching tool in the specified container
-    """
-
-    global fletchingTools
-
-    # Find the tool to craft with
-    for tool in fletchingTools:
-        tool = FindItem(tool.itemID, container)
-        if tool is not None:
-            return tool
 
 
 class FletchingCraftable(Craftable):
@@ -43,7 +29,7 @@ class FletchingCraftable(Craftable):
         super().__init__(Name, MinSkill, ResourcesNeeded, GumpPath)
 
 
-def GetCraftable(itemName=str("")):
+def GetCraftable(itemName=""):
     craftable = fletchingCraftables[itemName]
     if craftable is None:
         Misc.SendMessage(">> no such item in craft list", colors["fatal"])
@@ -73,11 +59,20 @@ def HasResources(itemName, resourceBag=Player.Backpack):
     return True
 
 
+def GetResourcesNeededAsItemIDs(itemName):
+    craftable = fletchingCraftables[itemName]
+    if craftable is None:
+        Misc.SendMessage(">> no such item in craft list", colors["fatal"])
+        return [int]
+
+    return [resource.itemID for resource in craftable.ResourcesNeeded.keys()]
+
+
 fletchingCraftables = {
     ### Materials: Gump Button 1 ###
     "kindling": FletchingCraftable(
         Name="kindling",
-        Item=None,
+        Item=miscellaneous["kindling"],
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},

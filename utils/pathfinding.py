@@ -1,146 +1,44 @@
-# To do - add Z axis (this might be more complicated than it sounds when it comes to pathfinding, but for an item/mob tile check it's fine)
-
-# system packages
 import random
-
-# custom RE packages
+from heapq import heappush, heappop
+import Items, Player, Misc, Mobiles, Statics, Target
 from glossary.colors import colors
 
-"""
-Ultima Online Razor Enhanced Pathfinding
-Author: Yulia.M
-Github: https://github.com/YulesRules/Ultima-Online-Razor-Enhanced-Pathfinding
+# *********************************************************************
+# Edit the following variables to suit your needs
 
-This Python script provides an implementation of the A* pathfinding algorithm for use with the Razor Enhanced client in Ultima Online.
-It allows player characters to navigate around obstacles in the game world such as items, mobiles (NPCs), player houses, and more.
-
-The pathfinding algorithm uses configurable filters to identify potential obstacles,
-and checks each tile along the path to determine if it is passable or not.
-
-The goal position for pathfinding is set interactively by the player using the in-game target prompt.
-
-Please refer to the README at https://github.com/YulesRules/Ultima-Online-Razor-Enhanced-Pathfinding/blob/main/README.md for detailed instructions and configuration options.
-
-Date: June 2023
-
-Note: This is a work in progress and may be updated or changed in future versions.
-"""
-
-# Configuration Variables
+# script flags
 config = {
-    "search_statics": True,  # look for blockable statics like trees, rocks (not blocked by sittable tree trunks) etc...
-    "player_house_filter": True,  # avoid player houses - make this False if you need to use inside a large open player house room without walls
-    "items_filter": {
-        "Enabled": True,  # look for items which may block the tile, chests, tables (but is also stopped by objects like chairs and cups) etc...
-    },
-    "mobiles_filter": {
-        "Enabled": True,  # look for MOBS which may block the tile (lambs, ancient dragons) etc...
-    },
+    "search_statics": True,
+    "player_house_filter": True,
+    "items_filter": {"Enabled": True},
+    "mobiles_filter": {"Enabled": True},
 }
 
-# PATH FINDING
-# defaults: 9000 iterations, 600 distance
-max_iterations = 9000  # anything too high (11k-100k might crash your client ;p
-max_distance = 600
-
-debug = 1  # output messages, 1 is partial feedback and 2 is everything happening during the pathfinding, set it to 0 for peace and quiet!
-maxRetryIterations = 1  # if we get stuck and give up, then try x amount of times to pathfind from the current location
-
-
-# ***************NO TOUCHING BELOW THIS LINE!!!***************
+# script parameters
+max_iterations = 10000
+max_distance = 1000
+debug = 1
+maxRetryIterations = 1
 retryIteration = 0
-longPause = 5000  # not in use
 shortPause = random.randint(50, 150)
 
 
+# ---------------------------------------------------------------------
+# do not edit below this line
+
+
+# pathfinding classes
 class Position:
     def __init__(self, x, y):
         self.X = x
         self.Y = y
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            return self.X == other.X and self.Y == other.Y
-        else:
-            return False
-
-
-playerStartPosition = Player.Position
-goalPosition = Position(0, 0)
-overrideAsPosition = Position(0, 0)
-
-
-if Misc.CheckSharedValue("pathFindingOverride"):
-    override = Misc.ReadSharedValue("pathFindingOverride")
-    overrideAsPosition = Position(override[0], override[1])
-
-    if goalPosition != overrideAsPosition:
-        goalPosition = overrideAsPosition
-        if debug > 0:
-            Misc.SendMessage(f">> remote pathfinding request detected", colors["debug"])
-            Misc.SendMessage(
-                f">> remote pathfinding request to {override[0],override[1]}",
-                colors["debug"],
-            )
-
-
-items_filter = Items.Filter()
-items_filter.Enabled = config["items_filter"]["Enabled"]
-
-mobiles_filter = Mobiles.Filter()
-mobiles_filter.Enabled = config["mobiles_filter"]["Enabled"]
-
-items = Items.ApplyFilter(items_filter)
-mobiles = Mobiles.ApplyFilter(mobiles_filter)
-
-
-def check_tile(tile_x, tile_y, items, mobiles):
-    flag_name = "Impassable"
-
-    # check if any items are on the tile
-    for item in items:
-        if (
-            item.Position.X == tile_x
-            and item.Position.Y == tile_y
-            and item.OnGround
-            and item.Visible
-            and item.Name != "nodraw"
-        ):
-            return False  # Tile is blocked by an item
-
-    # check if any mobiles are on the tile
-    for mobile in mobiles:
-        if (
-            mobile.Position.X == tile_x
-            and mobile.Position.Y == tile_y
-            and mobile.Visible
-        ):
-            return False  # Tile is blocked by a mobile
-
-    # Check for statics and houses on the tile
-    if config["search_statics"]:
-        static_land = Statics.GetLandID(tile_x, tile_y, Player.Map)
-        if Statics.GetLandFlag(static_land, flag_name):
-            return False  # Tile is blocked by a static
-
-        static_tile = Statics.GetStaticsTileInfo(tile_x, tile_y, Player.Map)
-        if len(static_tile) > 0:
-            for idx, static in enumerate(static_tile):
-                if Statics.GetTileFlag(static.StaticID, flag_name):
-                    return False  # Tile is blocked by a static
-
-    if config["player_house_filter"]:
-        is_blocked_by_house = Statics.CheckDeedHouse(tile_x, tile_y)
-        if is_blocked_by_house:
-            return False  # Tile is blocked by a house
-
-    # Tile is passable because it's not blocked
-    return True
-
-
-# Usage:
-# is_passable = check_tile(Player.Position.X + 1, Player.Position.Y)  # For one tile east
-# Misc.SendMessage(f"is_passable = {is_passable}")  # Prints True if the tile is passable, False otherwise
+        return (
+            isinstance(other, self.__class__)
+            and self.X == other.X
+            and self.Y == other.Y
+        )
 
 
 class Node:
@@ -155,49 +53,74 @@ class Node:
         return self.cost + self.heur < other.cost + other.heur
 
 
-class BinaryHeap:
-    def __init__(self):
-        self.heap = []
+# ---------------------------------------------------------------------
+# start of pathfinding logic
+# inits variables
 
-    def push(self, k):
-        self.heap.append(k)
-        self._siftup(len(self.heap) - 1)
+playerStartPosition = Player.Position
+goalPosition = Position(0, 0)
+overrideAsPosition = Position(0, 0)
 
-    def pop(self):
-        if len(self.heap) == 1:
-            return self.heap.pop()
-        smallest = self.heap[0]
-        self.heap[0] = self.heap.pop()
-        self._siftdown(0)
-        return smallest
+if Misc.CheckSharedValue("pathFindingOverride"):
+    override = Misc.ReadSharedValue("pathFindingOverride")
+    overrideAsPosition = Position(override[0], override[1])
 
-    def _siftup(self, i):
-        while i > 0 and self.heap[self._parent(i)] > self.heap[i]:
-            self.heap[i], self.heap[self._parent(i)] = (
-                self.heap[self._parent(i)],
-                self.heap[i],
+    if goalPosition != overrideAsPosition:
+        goalPosition = overrideAsPosition
+        if debug > 0:
+            Misc.SendMessage(">> remote pathfinding request detected", colors["debug"])
+            Misc.SendMessage(
+                f">> remote pathfinding request to {override[0],override[1]}",
+                colors["debug"],
             )
-            i = self._parent(i)
 
-    def _siftdown(self, i):
-        smallest = i
-        left, right = self._left(i), self._right(i)
-        if left < len(self.heap) and self.heap[i] > self.heap[left]:
-            smallest = left
-        if right < len(self.heap) and self.heap[smallest] > self.heap[right]:
-            smallest = right
-        if smallest != i:
-            self.heap[i], self.heap[smallest] = self.heap[smallest], self.heap[i]
-            self._siftdown(smallest)
+items_filter = Items.Filter()
+items_filter.Enabled = config["items_filter"]["Enabled"]
+mobiles_filter = Mobiles.Filter()
+mobiles_filter.Enabled = config["mobiles_filter"]["Enabled"]
+items = Items.ApplyFilter(items_filter)
+mobiles = Mobiles.ApplyFilter(mobiles_filter)
 
-    def _parent(self, i):
-        return (i - 1) // 2
 
-    def _left(self, i):
-        return 2 * i + 1
+# ---------------------------------------------------------------------
+# pathfinding functions
 
-    def _right(self, i):
-        return 2 * i + 2
+
+def check_tile(tile_x, tile_y, items, mobiles):
+    flag_name = "Impassable"
+    for item in items:
+        if (
+            item.Position.X == tile_x
+            and item.Position.Y == tile_y
+            and item.OnGround
+            and item.Visible
+            and item.Name != "nodraw"
+        ):
+            return False
+
+    for mobile in mobiles:
+        if (
+            mobile.Position.X == tile_x
+            and mobile.Position.Y == tile_y
+            and mobile.Visible
+        ):
+            return False
+
+    if config["search_statics"]:
+        static_land = Statics.GetLandID(tile_x, tile_y, Player.Map)
+        if Statics.GetLandFlag(static_land, flag_name):
+            return False
+
+        static_tile = Statics.GetStaticsTileInfo(tile_x, tile_y, Player.Map)
+        for static in static_tile:
+            if Statics.GetTileFlag(static.StaticID, flag_name):
+                return False
+
+    if config["player_house_filter"]:
+        if Statics.CheckDeedHouse(tile_x, tile_y):
+            return False
+
+    return True
 
 
 def heuristic(a, b):
@@ -211,53 +134,36 @@ def a_star_pathfinding(
     max_iterations=10000,
     max_distance=None,
 ):
-    # Apply the filters to get all items and mobiles
-    items_filter = Items.Filter()
-    items_filter.Enabled = config["items_filter"]["Enabled"]
-
-    mobiles_filter = Mobiles.Filter()
-    mobiles_filter.Enabled = config["mobiles_filter"]["Enabled"]
-
     items = Items.ApplyFilter(items_filter)
     mobiles = Mobiles.ApplyFilter(mobiles_filter)
-    open_nodes = BinaryHeap()
+    open_nodes = []
     closed_nodes = set()
     path = None
 
     start_node = Node(playerStartPosition.X, playerStartPosition.Y)
     goal_node = Node(goalPosition.X, goalPosition.Y)
 
-    open_nodes.push(start_node)
+    heappush(open_nodes, start_node)
     if debug > 0:
         Misc.SendMessage(">> pathfinding started...", colors["debug"])
 
     for i in range(max_iterations):
         if debug > 1:
             Misc.SendMessage(f">> current iteration: {i}", colors["debug"])
-        # if i == 2000:
-        # Player.HeadMessage(42, "Difficult one...")
-        if i == 4000:
-            Player.HeadMessage(42, "Difficult one...")
-        # if i == 6000:
-        # Player.HeadMessage(42, "Yikes, I need more time...")
-        if len(open_nodes.heap) == 0:
+
+        if not open_nodes:
             Misc.SendMessage(
                 ">> pathfinding failed: no valid path found", colors["debug"]
             )
             return None
 
-        current_node = open_nodes.pop()
+        current_node = heappop(open_nodes)
         closed_nodes.add((current_node.x, current_node.y))
 
-        # Check if current node is beyond max_distance
         if (
             max_distance is not None
             and heuristic(start_node, current_node) > max_distance
         ):
-            Misc.SendMessage(
-                f">> node {current_node.x}, {current_node.y} is beyond max distance, skipping",
-                colors["debug"],
-            )
             continue
 
         if current_node.x == goal_node.x and current_node.y == goal_node.y:
@@ -280,19 +186,23 @@ def a_star_pathfinding(
             (-1, 1),
         ]:
             next_x, next_y = current_node.x + dx, current_node.y + dy
-            if dx != 0 and dy != 0:  # if moving diagonally
-                # Check if the tile to the North or South (depending on dy) is passable
-                if not check_tile(current_node.x, current_node.y + dy, items, mobiles):
-                    continue
-                # Check if the tile to the East or West (depending on dx) is passable
-                if not check_tile(current_node.x + dx, current_node.y, items, mobiles):
-                    continue
+            if (
+                dx != 0
+                and dy != 0
+                and (
+                    not check_tile(current_node.x, current_node.y + dy, items, mobiles)
+                    or not check_tile(
+                        current_node.x + dx, current_node.y, items, mobiles
+                    )
+                )
+            ):
+                continue
             if (
                 check_tile(next_x, next_y, items, mobiles)
                 and (next_x, next_y) not in closed_nodes
             ):
                 cost = (
-                    current_node.cost + 0.05
+                    current_node.cost + 1.4
                     if dx != 0 and dy != 0
                     else current_node.cost + 1
                 )
@@ -303,13 +213,10 @@ def a_star_pathfinding(
                     heuristic(goal_node, Node(next_x, next_y)),
                     current_node,
                 )
-                open_nodes.push(next_node)
+                heappush(open_nodes, next_node)
 
     Misc.SendMessage(">> pathfinding failed", colors["debug"])
     return path
-
-
-###################CHARACTER MOVEMENT#################
 
 
 def move_player_along_path(path):
@@ -324,10 +231,10 @@ def move_player_along_path(path):
         (-1, 1): "Left",
     }
     stuckCount = 0
-    stop_moving = False  # Add a stop flag
+    stop_moving = False
 
     for i in range(len(path) - 1):
-        if stop_moving:  # Check the stop flag at the start of every loop
+        if stop_moving:
             break
 
         current_node, next_node = path[i], path[i + 1]
@@ -342,18 +249,14 @@ def move_player_along_path(path):
         Player.Run(direction)
         Misc.Pause(shortPause)
 
-        # Output the step
         if debug > 1:
             Misc.SendMessage(
-                f">> moving from {current_node} to {next_node} ({i} of {len(path)}",
+                f">> moving from {current_node} to {next_node} ({i} of {len(path)})",
                 colors["debug"],
             )
 
-        # Check the position after each step and wait until the movement is complete
         while (Player.Position.X, Player.Position.Y) != next_node:
             Misc.Pause(shortPause)
-
-            # If the player hasn't moved after a certain amount of time, try moving again
             if (Player.Position.X, Player.Position.Y) == current_node:
                 if debug > 1:
                     Misc.SendMessage(
@@ -366,15 +269,17 @@ def move_player_along_path(path):
                 Player.HeadMessage(42, "oops...thinking..!")
                 if stuckCount > 5:
                     Player.HeadMessage(42, "I give up!")
-                    stop_moving = True  # Set the stop flag
+                    stop_moving = True
                     break
-            # Break the loop if the player is close enough to the goal
             elif (
                 abs(Player.Position.X - next_node[0]) <= 1
                 and abs(Player.Position.Y - next_node[1]) <= 1
             ):
                 break
 
+
+# ---------------------------------------------------------------------
+# main process
 
 if goalPosition == Position(0, 0):
     goalPosition = Target.PromptGroundTarget("Where do you wish to pathfind?")
@@ -390,12 +295,12 @@ else:
 
 if path == 0:
     if debug > 0:
-        Misc.SendMessage(f">> invalid Area", colors["debug"])
+        Misc.SendMessage(">> invalid Area", colors["debug"])
     else:
         Player.HeadMessage(42, "That's inaccessible!")
 elif not path:
     if debug > 0:
-        Misc.SendMessage(f">> no valid path found", colors["debug"])
+        Misc.SendMessage(">> no valid path found", colors["debug"])
         Misc.SendMessage(f">> failed after {max_iterations} attempts", colors["debug"])
     else:
         Player.HeadMessage(42, "I can't figure out how to get there!")
@@ -405,14 +310,14 @@ else:
     for node in path:
         if debug > 1:
             Misc.SendMessage(f">> node in path: {node}", colors["debug"])
-    move_player_along_path(path)  # Moved outside the loop
+    move_player_along_path(path)
 
 if Player.Position == goalPosition:
     if debug == 0:
         Player.HeadMessage(42, "I have arrived!")
-    Misc.SendMessage(f">> movement complete", colors["debug"])
+    Misc.SendMessage(">> movement complete", colors["debug"])
 
 if Misc.CheckSharedValue("pathFindingOverride"):
     Misc.SetSharedValue(
         "pathFindingOverride", (0, 0)
-    )  # reset shared value to allow for normal targeting prompt
+    )  # resets shared value to allow for normal targeting prompt

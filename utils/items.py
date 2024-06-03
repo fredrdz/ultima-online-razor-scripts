@@ -30,11 +30,17 @@ def MoveItemsByCount(itemListByID, srcContainer, dstContainer):
     moved_items_count = {}  # dictionary to store the count of each moved item
     total_moved_count = 0  # total count of all moved items
 
+    # some cleanup to avoid issues with dragging items
+    Misc.Resync()
+    Misc.ClearDragQueue()
+
     for item_id, count in itemListByID:
         items_found = 0  # keep track of how many items of this type have been moved
         if count == -1:
             # Move the entire amount of the item type
-            for containerItem in Items.FindAllByID(item_id, -1, srcContainer, 0, False):
+            for containerItem in Items.FindAllByID(
+                item_id, 0, srcContainer, False, True
+            ):
                 item_name = containerItem.Name
                 item_amount = containerItem.Amount
                 Items.Move(containerItem, dstContainer, item_amount)
@@ -44,7 +50,9 @@ def MoveItemsByCount(itemListByID, srcContainer, dstContainer):
                 moved_items_count[item_name] = item_amount
         else:
             # Move according to the specified count
-            for containerItem in Items.FindAllByID(item_id, -1, srcContainer, 0, False):
+            for containerItem in Items.FindAllByID(
+                item_id, 0, srcContainer, False, True
+            ):
                 if items_found >= count:
                     break
                 item_name = containerItem.Name
@@ -133,7 +141,7 @@ def FindItem(itemID, container, color=-1, ignoreContainer=[]):
     subcontainers = [
         item
         for item in container.Contains
-        if (item.IsContainer and not item.Serial in ignoreContainer)
+        if (item.IsContainer and item.Serial not in ignoreContainer)
     ]
     for subcontainer in subcontainers:
         foundItem = FindItem(itemID, subcontainer, color, ignoreContainer)

@@ -9,4 +9,5 @@ if Player.Name == "Talik Starr":
 # autorun some scripts
 Misc.Pause(5000)  # wait 5s before running the scripts to let client load in
 Misc.ScriptRun("_defense.py")
-Misc.ScriptRun("train_AnimalTaming.py")
+# Misc.ScriptRun("train_AnimalTaming.py")
+Misc.ScriptRun("train_Fletching.py")

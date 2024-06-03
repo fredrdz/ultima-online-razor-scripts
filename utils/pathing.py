@@ -204,7 +204,7 @@ def RazorPathing(x, y):
     route.DebugMessage = False
     route.StopIfStuck = True
     route.MaxRetry = 0
-    route.Timeout = 3
+    route.Timeout = 5
 
     Misc.SendMessage(">> razor pathing", colors["debug"])
     distance = PathCount(route.X, route.Y)
@@ -215,3 +215,7 @@ def RazorPathing(x, y):
         return True
 
     return False
+
+
+def ClassicPathing(x, y):
+    Player.PathFindTo(x, y, 1)

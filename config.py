@@ -2,5 +2,5 @@
 shardLatency = 100
 journalEntryDelayMilliseconds = 150
 targetClearDelayMilliseconds = 150
-dragDelayMilliseconds = 500
+dragDelayMilliseconds = 600
 recallDelay = 3500
