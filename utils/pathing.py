@@ -54,7 +54,7 @@ def Get_position(sys_msg=None):
     return position
 
 
-def PathCount(x, y=0, z=0):
+def PathCount(x, y=0, z=0) -> int:
     player_position = Player.Position
     pX = player_position.X
     pY = player_position.Y

@@ -18,6 +18,7 @@ from glossary.colors import colors
 from glossary.spells import spellReagents
 from utils.pathing import (
     IsPosition,
+    PathCount,
     PlayerDiagonalOffset,
     RazorPathing,
 )
@@ -49,7 +50,7 @@ runaway = False
 secureContainer = None
 
 containerInBank = 0x40054709  # Serial of log bag in bank
-bankX = 3701
+bankX = 3696
 bankY = 2522
 
 
@@ -75,9 +76,14 @@ logID = 0x1BDD
 boardID = 0x1BD7
 goldID = 0x0EED
 
+# triplet; (itemID, color, count)
+# defaults to natural color of item if tuple
+# naturalColor = 0
+# anyColor = -1
+# anyAmount = -1
 depositItems = [
-    (boardID, -1),
-    (logID, -1),
+    (boardID, -1, -1),
+    (logID, -1, -1),
     (goldID, -1),
 ]
 
@@ -189,12 +195,12 @@ treeStaticIDs = [
 
 # ---------------------------------------------------------------------
 def Bank(runebook, rune, x=0, y=0):
-    # recall to bank area
-    if not IsPosition(x, y):
+    # recall to bank if not close
+    if PathCount(x, y) > 20:
         RecallBank(runebook, rune)
         Misc.Pause(2000)
 
-    # path to bank if not at bank calling coordinates
+    # pathfind to bank if not at bank calling coordinates
     if IsPosition(x, y) is False:
         if RazorPathing(x, y) is False:
             Misc.SetSharedValue("pathFindingOverride", (x, y))
@@ -216,7 +222,7 @@ def Restock(itemList, src, dst=Player.Backpack.Serial):
     difference = []
     for id, required_count in itemList:
         src_count = Items.ContainerCount(src, id)
-        if src_count < required_count:
+        if src_count <= required_count:
             return False
 
         dst_count = Items.BackpackCount(id)
@@ -232,6 +238,8 @@ def Restock(itemList, src, dst=Player.Backpack.Serial):
 
 
 def DepositAndRestock(runebook, rune, x=0, y=0):
+    Journal.Clear()
+
     # use bank if enabled
     if containerInBank is not None:
         Bank(runebook, rune, x, y)
@@ -246,18 +254,17 @@ def DepositAndRestock(runebook, rune, x=0, y=0):
     while Items.BackpackCount(logID) > 0:
         CutLogs()
 
+    # open the container to load contents into memory
+    if containerItem.IsContainer:
+        Items.UseItem(containerItem)
+
     # deposit items in container
-    Journal.Clear()
     MoveItemsByCount(depositItems, playerBag, restockContainer)
 
     # fatal error if container is full
     if Journal.SearchByType("That container cannot hold more weight.", "System"):
         Misc.SendMessage(">> container is full", colors["fatal"])
         sys.exit()
-
-    # open the container to load contents into memory
-    if containerItem.IsContainer:
-        Items.UseItem(containerItem)
 
     # restock
     recallSpell = spellReagents.get("Recall", [])
@@ -272,6 +279,8 @@ def DepositAndRestock(runebook, rune, x=0, y=0):
 # ---------------------------------------------------------------------
 def ScanStatic():
     global trees
+
+    Misc.Resync()
     Misc.SendMessage(">> scan tile started...", colors["notice"])
     minX = Player.Position.X - scanRadius
     maxX = Player.Position.X + scanRadius
@@ -302,7 +311,6 @@ def MoveToTree():
     Misc.SendMessage(
         ">> moving to tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
     )
-    Misc.Resync()
 
     chopOffset = PlayerDiagonalOffset(trees[0].x, trees[0].y)
     if not chopOffset:
@@ -457,22 +465,31 @@ def IsEnemy():
     return True
 
 
-def IsPlayer():
+def IsPlayer(talkDetect=False):
     players = Mobiles.ApplyFilter(playerFilter)
     if not players or len(players) == 0:
         return False
 
     nearestPlayer = Mobiles.Select(players, "Nearest")
 
-    if nearestPlayer:
+    if nearestPlayer and talkDetect is True:
+        chatLog = Journal.GetTextByName(nearestPlayer.Name, True)
+        if len(chatLog) > 0:
+            Misc.SendMessage(
+                ">> player talking: " + nearestPlayer.Name, colors["alert"]
+            )
+            Journal.Clear()
+            return True
+    else:
         Mobiles.Message(
             nearestPlayer,
             colors["warning"],
             ">> player detected",
         )
         Misc.SendMessage(">> player near: " + nearestPlayer.Name, colors["alert"])
+        return True
 
-    return True
+    return False
 
 
 def SafteyNet():
@@ -493,7 +510,7 @@ def SafteyNet():
 
     if alert:
         invul = Mobiles.ApplyFilter(invulFilter)
-        if IsPlayer() is True:
+        if IsPlayer(talkDetect=True) is True:
             Misc.Beep()
             Audio_say("player is here")
         elif invul:
