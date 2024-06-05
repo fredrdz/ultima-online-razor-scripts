@@ -13,7 +13,7 @@ from System import Byte
 import random
 
 # custom RE packages
-import Friend, Items, Journal, Player, Misc, Mobiles, Statics, Target, Timer
+import Friend, Gumps, Items, Journal, Player, Misc, Mobiles, Statics, Target, Timer
 from glossary.colors import colors
 from glossary.spells import spellReagents
 from utils.pathing import (
@@ -50,8 +50,8 @@ runaway = False
 secureContainer = None
 
 containerInBank = 0x40054709  # Serial of log bag in bank
-bankX = 3696
-bankY = 2522
+bankX = 3701
+bankY = 2519
 
 
 # slot number in runebook, 1 of 16
@@ -66,7 +66,8 @@ CURRENT_TREE_RUNE = 2
 # ********************
 
 # Parameters
-scanRadius = 30
+# more than 25 tiles of scanning may crash client
+scanRadius = 25
 
 weightLimit = Player.MaxWeight + 30
 
@@ -212,11 +213,11 @@ def Bank(runebook, rune, x=0, y=0):
 
 def Restock(itemList, src, dst=Player.Backpack.Serial):
     if not itemList:
-        Misc.Message(">> no items requested for restock", colors["fatal"])
+        Misc.SendMessage(">> no items requested for restock", colors["fatal"])
         return False
 
     if src is None or not isinstance(src, int):
-        Misc.Message(">> no source container specified", colors["fatal"])
+        Misc.SendMessage(">> no source container specified", colors["fatal"])
         return False
 
     difference = []
@@ -230,7 +231,7 @@ def Restock(itemList, src, dst=Player.Backpack.Serial):
             difference.append((id, required_count - dst_count))
 
     if not difference:
-        Misc.Message(">> no items need restocking", colors["success"])
+        Misc.SendMessage(">> no items need restocking", colors["success"])
         return True
 
     MoveItemsByCount(difference, src, dst)
@@ -277,30 +278,39 @@ def DepositAndRestock(runebook, rune, x=0, y=0):
 
 
 # ---------------------------------------------------------------------
-def ScanStatic():
-    global trees
+# bug: may crash client when tree list is too large or too many tiles
+def ScanStatic(trees=List[Tree]) -> List[Tree]:
+    new_trees = []
 
     Misc.Resync()
-    Misc.SendMessage(">> scan tile started...", colors["notice"])
-    minX = Player.Position.X - scanRadius
-    maxX = Player.Position.X + scanRadius
-    minY = Player.Position.Y - scanRadius
-    maxY = Player.Position.Y + scanRadius
+    Misc.SendMessage(">> scanning tiles...", colors["status"])
 
+    player_position = Player.Position
+    minX = player_position.X - scanRadius
+    maxX = player_position.X + scanRadius
+    minY = player_position.Y - scanRadius
+    maxY = player_position.Y + scanRadius
+
+    Misc.SendMessage(">> adding trees", colors["status"])
     for x in range(minX, maxX + 1):
         for y in range(minY, maxY + 1):
             staticsTileInfo = Statics.GetStaticsTileInfo(x, y, Player.Map)
             if staticsTileInfo:
                 for tile in staticsTileInfo:
                     if tile.StaticID in treeStaticIDs and not Timer.Check(f"{x},{y}"):
-                        trees.append(Tree(x, y, tile.StaticZ, tile.StaticID))
+                        new_trees.append(Tree(x, y, tile.StaticZ, tile.StaticID))
 
-    trees.sort(
+    Misc.SendMessage(">> sorting trees", colors["status"])
+    new_trees.sort(
         key=lambda tree: math.hypot(
-            tree.x - Player.Position.X, tree.y - Player.Position.Y
+            tree.x - player_position.X, tree.y - player_position.Y
         )
     )
+
+    trees.extend(new_trees)
+
     Misc.SendMessage(">> total trees: %i" % len(trees), colors["success"])
+    return trees
 
 
 # ---------------------------------------------------------------------
@@ -308,11 +318,16 @@ def MoveToTree():
     if not trees or len(trees) == 0:
         return False
 
-    Misc.SendMessage(
-        ">> moving to tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
-    )
+    tX = trees[0].x
+    tY = trees[0].y
 
-    chopOffset = PlayerDiagonalOffset(trees[0].x, trees[0].y)
+    if PathCount(tX, tY) > 50:
+        Misc.SendMessage(f">> tree too far away: {tX}, {tY}", colors["warning"])
+        return False
+
+    Misc.SendMessage(f">> moving to tree: {tX}, {tY}", colors["status"])
+
+    chopOffset = PlayerDiagonalOffset(tX, tY)
     if not chopOffset:
         return False
 
@@ -336,17 +351,12 @@ def MoveToTree():
     if Timer.Check("pathing") is False:
         if Misc.ScriptStatus("pathfinding.py"):
             Misc.ScriptStop("pathfinding.py")
-        Misc.SendMessage(">> pathlocked, resetting", colors["fatal"])
-        Misc.SendMessage(
-            ">> failed to reach tree: %i, %i" % (trees[0].x, trees[0].y),
-            colors["error"],
-        )
+        Misc.SendMessage(">> pathlocked, resetting", colors["error"])
+        Misc.SendMessage(f">> failed to reach tree: {tX}, {tY}", colors["error"])
         return False
 
     # if here, we succeeded in reaching the tree
-    Misc.SendMessage(
-        ">> reached tree: %i, %i" % (trees[0].x, trees[0].y), colors["notice"]
-    )
+    Misc.SendMessage(f">> reached tree: {tX}, {tY}", colors["notice"])
     return True
 
 
@@ -383,7 +393,7 @@ def EquipAxe():
 # ---------------------------------------------------------------------
 def CutTree():
     if Target.HasTarget():
-        Misc.SendMessage(">> detected target cursor, refreshing...", colors["notice"])
+        Misc.SendMessage(">> detected target cursor, refreshing...", colors["warning"])
         Target.Cancel()
         Misc.Pause(500)
 
@@ -433,15 +443,15 @@ def CutTree():
         Misc.SendMessage(">> tree change", colors["status"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif Journal.Search("bloodwood"):
-        Misc.SendMessage(">> bloodwood!", colors["success"])
+        Misc.SendMessage(">> bloodwood!", colors["status"])
         Timer.Create("chopTimer", 10000)
         CutTree()
     elif Journal.Search("heartwood"):
-        Misc.SendMessage(">> heartwood!", colors["success"])
+        Misc.SendMessage(">> heartwood!", colors["status"])
         Timer.Create("chopTimer", 10000)
         CutTree()
     elif Journal.Search("frostwood"):
-        Misc.SendMessage(">> frostwood!", colors["success"])
+        Misc.SendMessage(">> frostwood!", colors["status"])
         Timer.Create("chopTimer", 10000)
         CutTree()
     else:
@@ -474,12 +484,20 @@ def IsPlayer(talkDetect=False):
 
     if nearestPlayer and talkDetect is True:
         chatLog = Journal.GetTextByName(nearestPlayer.Name, True)
-        if len(chatLog) > 0:
-            Misc.SendMessage(
-                ">> player talking: " + nearestPlayer.Name, colors["alert"]
-            )
-            Journal.Clear()
-            return True
+        if chatLog:
+            if len(chatLog) > 1:
+                Mobiles.Message(
+                    nearestPlayer,
+                    colors["warning"],
+                    ">> player detected",
+                )
+                Misc.SendMessage(
+                    f">> player talking: {nearestPlayer.Name}", colors["alert"]
+                )
+                for chat in chatLog:
+                    Misc.SendMessage(f">> player said: {chat} ", colors["alert"])
+                    Journal.Clear()
+                return True
     else:
         Mobiles.Message(
             nearestPlayer,
@@ -493,21 +511,29 @@ def IsPlayer(talkDetect=False):
 
 
 def SafteyNet():
+    # tries to auto solve afk gump or alerts if it fails
     if is_afk_gump():
         Misc.Beep()
-        Audio_say("solving AFK Gump")
         button_options = get_afk_gump_button_options()
         if button_options:
             if not solve_afk_gump(button_options):
+                Audio_say("solve AFK Gump")
                 Misc.FocusUOWindow()
                 sys.exit()
 
+    # close any gumps that may be opened to avoid issues
+    if Gumps.HasGump():
+        opened_gump_id = Gumps.CurrentGump()
+        Gumps.CloseGump(opened_gump_id)
+
+    # checks runaway flag; recalls away from enemies if detected
     if runaway is True:
         if IsEnemy() is True:
             Misc.Beep()
             Audio_say("enemy detected")
             RecallNext(runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE)
 
+    # monitors mobiles and alerts if found
     if alert:
         invul = Mobiles.ApplyFilter(invulFilter)
         if IsPlayer(talkDetect=True) is True:
@@ -558,7 +584,7 @@ Misc.SendMessage(">> lumberjack starting up...", colors["notice"])
 
 while not Player.IsGhost:
     Misc.Pause(100)
-    ScanStatic()
+    trees = ScanStatic(trees)
 
     if not trees or len(trees) == 0:
         Misc.SendMessage(">> no trees found", colors["fatal"])

@@ -1,3 +1,11 @@
+"""
+SCRIPT: pathfinding.py
+Author: Talik Starr
+IN:RISEN
+
+Description: custom pathfinding which takes into account statics, player houses, items, and mobiles
+"""
+
 import random
 from heapq import heappush, heappop
 import Items, Player, Misc, Mobiles, Statics, Target
