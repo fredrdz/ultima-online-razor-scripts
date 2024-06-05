@@ -1,15 +1,11 @@
 # system packages
 import sys
+from System.Collections.Generic import List
 
 # custom RE packages
 import config
 import Items, Player, Gumps, Misc
 from glossary.items.containers import FindTrashBarrel
-from glossary.crafting.fletching import (
-    GetResourcesNeededAsItemIDs,
-    HasResources,
-    GetCraftable,
-)
 from glossary.colors import colors
 from utils.items import (
     FindItem,
@@ -23,7 +19,7 @@ from utils.item_actions.common import RecallBank, use_runebook
 from utils.pathing import IsPosition, RazorPathing
 
 
-def FindTool(tools=[], container=Player.Backpack):
+def FindTool(tools=[], container=Player.Backpack) -> None:
     """
     Searches for a crafting tool in the specified container
     """
@@ -33,6 +29,57 @@ def FindTool(tools=[], container=Player.Backpack):
         tool = FindItem(tool.itemID, container)
         if tool is not None:
             return tool
+
+
+def GetCraftable(itemName="", craftables={}) -> None:
+    if not craftables:
+        Misc.SendMessage(">> no craft list found", colors["fatal"])
+        return None
+
+    craftable = craftables.get(itemName)
+    if not craftable:
+        Misc.SendMessage(">> no such item in craft list", colors["fatal"])
+        return None
+    return craftable
+
+
+def HasResources(itemName, craftables={}, resourceBag=Player.Backpack) -> bool:
+    if not craftables:
+        Misc.SendMessage(">> no craft list found", colors["fatal"])
+        return False
+
+    craftable = craftables.get(itemName)
+    if not craftable:
+        Misc.SendMessage(">> no such item in craft list", colors["fatal"])
+        return False
+
+    # find current resources
+    resourcesNeeded = craftable.ResourcesNeeded
+    for resource, amountNeeded in resourcesNeeded.items():
+        resourceName = resource.name
+        resourceID = resource.itemID
+        currentResources = FindNumberOfItems(resourceID, resourceBag, 0x0000)
+
+        if currentResources.get(resourceID, 0) < amountNeeded:
+            Misc.SendMessage(">> out of resource: %s" % resourceName, colors["fail"])
+            Misc.SendMessage(
+                ">> out of resources for item: %s" % craftable.Name, colors["fail"]
+            )
+            return False
+    return True
+
+
+def GetResourcesNeededAsItemIDs(itemName, craftables={}) -> List[int]:
+    if not craftables:
+        Misc.SendMessage(">> no craft list found", colors["fatal"])
+        return [int]
+
+    craftable = craftables.get(itemName)
+    if not craftable:
+        Misc.SendMessage(">> no such item in craft list", colors["fatal"])
+        return [int]
+
+    return [resource.itemID for resource in craftable.ResourcesNeeded.keys()]
 
 
 def VendorSell(craftItemID, vendorName, sellX, sellY, runebook, runeSlot):
@@ -63,7 +110,7 @@ def Bank(runebook, bankRune, x=0, y=0):
     Chat_on_position("bank", (x, y))
 
 
-def Restock(itemList, src, dst=Player.Backpack.Serial):
+def Restock(itemList, src, dst=Player.Backpack.Serial) -> bool:
     if not itemList:
         Misc.Message(">> no items requested for restock", colors["fatal"])
         return False
@@ -92,6 +139,7 @@ def Restock(itemList, src, dst=Player.Backpack.Serial):
 
 def DepositAndRestockForItem(
     itemName,
+    skillCraftables,
     depositItems,
     containerInBank,
     restockContainer,
@@ -118,11 +166,11 @@ def DepositAndRestockForItem(
     MoveItemsByCount(depositItems, Player.Backpack.Serial, restockContainer)
 
     # check for craftable resources in restocking container
-    if HasResources(itemName, containerItem) is False:
+    if HasResources(itemName, skillCraftables, containerItem) is False:
         Misc.SendMessage(">> out of resources in restocking container", colors["fatal"])
         sys.exit()
     else:
-        needed = GetResourcesNeededAsItemIDs(itemName)
+        needed = GetResourcesNeededAsItemIDs(itemName, skillCraftables)
         restockItems = []
         for itemID in needed:
             restockItems.append((itemID, 100))
@@ -142,6 +190,7 @@ def TrainCraftSkill(
     sellItems = craftConfig.get("sellItems", False)
     throwAwayItems = craftConfig.get("throwAwayItems", False)
     depositItems = craftConfig.get("depositItems", [])
+    playerBag = craftConfig.get("playerBag", Player.Backpack)
     runebook = craftConfig.get("runebook", 0)
     bankRune = craftConfig.get("bank_rune", 1)
     houseRune = craftConfig.get("house_rune", 2)  # not in use
@@ -149,6 +198,7 @@ def TrainCraftSkill(
     skillName = craftConfig.get("skillName", "")
     skillGump = craftConfig.get("skillGump", 0)
     skillTools = craftConfig.get("skillTools", [])
+    skillCraftables = craftConfig.get("skillCraftables", {})
     bX, bY = craftConfig.get("bankPosition", (0, 0))
     vendorName = craftConfig.get("vendorName", "")
     sX, sY = craftConfig.get("vendorPosition", (0, 0))
@@ -194,7 +244,7 @@ def TrainCraftSkill(
                     break
 
         # set craftable item parameters
-        craftable = GetCraftable(itemName)
+        craftable = GetCraftable(itemName, skillCraftables)
         if not craftable:
             sys.exit()
 
@@ -203,13 +253,14 @@ def TrainCraftSkill(
         craftItemWeight = craftItem.weight
         craftItemMaxCountByWeight = Player.MaxWeight - 30 // craftItemWeight
 
-        # check if we have enough resources in player backpack
-        if HasResources(itemName) is False:
+        # check if we have enough resources in player bag
+        if HasResources(itemName, skillCraftables, playerBag) is False:
             Misc.SendMessage(">> out of resources in player bag", colors["fail"])
             if sellItems and Items.BackpackCount(craftItemID) > 0:
                 VendorSell(craftItemID, vendorName, sX, sY, runebook, vendorRune)
             DepositAndRestockForItem(
                 itemName,
+                skillCraftables,
                 depositItems,
                 containerInBank,
                 restockContainer,
@@ -241,6 +292,7 @@ def TrainCraftSkill(
             else:
                 DepositAndRestockForItem(
                     itemName,
+                    skillCraftables,
                     depositItems,
                     containerInBank,
                     restockContainer,

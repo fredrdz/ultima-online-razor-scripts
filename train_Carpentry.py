@@ -5,145 +5,146 @@ IN:RISEN
 Skill: Carpentry
 """
 
-import config
+# custom RE packages
+import Items, Player, Misc, Target
+from glossary.crafting.carpentry import (
+    carpName,
+    carpGump,
+    carpTools,
+    carpCraftables,
+)
 from glossary.colors import colors
-from glossary.crafting.carpentry import FindCarpentryTool, carpentryCraftables
-from glossary.items.containers import FindTrashBarrel
-from utils.items import FindItem, FindNumberOfItems, MoveItem
+from utils.crafting import TrainCraftSkill
+from utils.items import EnableSellingAgent
 
-# Set to serial of bag or 'pet' for the mount that you are on
-# Set to None if you don't want to keep slayers
-slayerBag = "pet"
-petName = "Packy"
+# ---------------------------------------------------------------------
+# script configuration; modify these per your requirements
+
+# setting a secure container will disable bank restocking
+# will restock from here instead; useful for crafting in house
+secureContainer = 0x40125C18
+# will toss successful crafts into trash barrel
+throwAwayItems = False
+# will vendor sell after full backpack or if overweight
+sellItems = False
+
+# vendor selling parameters
+vendorName = "Slade"
+sellX = 1470
+sellY = 1581
+
+# slot number in runebook, 1 of 16
+bank_rune = 1
+house_rune = 2
+vendor_rune = 3
+
+# bank parameters
+# only use bank from this x,y coordinate
+bankX = 1424
+bankY = 1683
+# disabled if secure container in use
+containerInBank = 0x40054709
+
+# items to deposit in bank bag or secure container
+# a list of tuples containing itemID and count
+depositItems = [
+    (0x0EED, -1),  # gold
+    (0x0EF3, -1),  # blank scrolls
+]
+
+# ---------------------------------------------------------------------
+# do not edit below this line
+
+# init
+# check for runebook
+if not Misc.CheckSharedValue("young_runebook"):
+    Misc.ScriptRun("_startup.py")
+if Misc.CheckSharedValue("young_runebook"):
+    runebook_serial = Misc.ReadSharedValue("young_runebook")
+else:
+    runebook_serial = Target.PromptTarget(
+        ">> target the runebook with th bank, house, and vendor rune", colors["notice"]
+    )
+
+# check what type of restock container we're using;
+# only one instance of secureContainer or containerInBank may exist;
+# not both; one will be set to None
+if secureContainer is not None:
+    # secure container was specified; use it
+    restockContainer = secureContainer
+    containerInBank = None
+elif containerInBank is not None:
+    # container in bank was specified; use it
+    restockContainer = containerInBank
+else:
+    # no container was specified; prompt for one
+    restockContainer = Target.PromptTarget(
+        ">> target your restocking container", colors["notice"]
+    )
+    containerAsItem = Items.FindBySerial(restockContainer)
+    # check if container is in bank
+    if containerAsItem.IsInBank is False:
+        Misc.SendMessage(f">> {containerAsItem.Name} was not in bank", colors["status"])
+        secureContainer = restockContainer
+        containerInBank = None
+    else:
+        Misc.SendMessage(f">> {containerAsItem.Name} was in bank", colors["status"])
+        containerInBank = restockContainer
+        secureContainer = None
 
 
-def FindPet(name):
+craftConfig = {
+    # script flags
+    "sellItems": sellItems,
+    "throwAwayItems": throwAwayItems,
+    # container settings
+    "containerInBank": containerInBank,
+    "restockContainer": restockContainer,
+    "depositItems": depositItems,
+    # player settings
+    "playerBag": Player.Backpack,
+    "runebook": runebook_serial,
+    "house_rune": house_rune,
+    # bank settings
+    "bank_rune": bank_rune,
+    "bankPosition": (bankX, bankY),
+    # vendor settings
+    "vendor_rune": vendor_rune,
+    "vendorName": vendorName,
+    "vendorPosition": (sellX, sellY),
+    # skill settings
+    "skillName": carpName,
+    "skillGump": carpGump,
+    "skillTools": carpTools,
+    "skillCraftables": carpCraftables,
+    # skill path to use: "skill" or "profit"
+    "usePath": "skill",
+    # a dictionary of skill paths and their values
+    # define what item names to craft and up to which maximum skill value
+    "paths": {
+        "skill": {"club": 70.0, "blank scroll": 100.0},
+        "profit": {
+            "club": 70.0,
+            "test": 100.0,
+        },
+    },
+}
+
+
+# ---------------------------------------------------------------------
+# script functions
+def TrainCarpentrySkill(
+    craftConfig={},
+):
     """
-    Finds pet to use for storage
+    Trains Carpentry skill to its skill cap
     """
-
-    petFilter = Mobiles.Filter()
-    petFilter.Enabled = True
-    petFilter.RangeMin = 0
-    petFilter.RangeMax = 1
-    petFilter.Name = name
-
-    pet = Mobiles.ApplyFilter(petFilter)[0]
-    return pet
+    TrainCraftSkill(craftConfig)
+    return
 
 
-def TrainCarpentry():
-    """
-    Trains Carpentry to its skill cap
-    """
+# ---------------------------------------------------------------------
+# main script process
 
-    if Player.GetRealSkillValue("Carpentry") == Player.GetSkillCap("Carpentry"):
-        Misc.SendMessage(">> maxed out carpentry skill", colors["notice"])
-        return
-
-    tool = FindCarpentryTool(Player.Backpack)
-    if tool is None:
-        Misc.SendMessage(">> no tools to train with", colors["fatal"])
-        return
-
-    trashBarrel = FindTrashBarrel(Items)
-    if trashBarrel is None:
-        Misc.SendMessage(">> no trash barrel nearby...", colors["fatal"])
-        Misc.SendMessage(">> move closer to one to throw away maps", colors["fatal"])
-        return
-
-    Journal.Clear()
-    while not Player.IsGhost and Player.GetRealSkillValue(
-        "Carpentry"
-    ) < Player.GetSkillCap("Carpentry"):
-        # make sure the tool isn't broken. If it is broken, this will return None
-        tool = Items.FindBySerial(tool.Serial)
-        if tool is None:
-            tool = FindCarpentryTool(Player.Backpack)
-            if tool is None:
-                Misc.SendMessage(">> no tools to train with", colors["fatal"])
-                break
-
-        # select the item to craft
-        itemToCraft = None
-        if Player.GetRealSkillValue("Carpentry") < 40.0:
-            Misc.SendMessage(">> skill too low...", colors["fatal"])
-            Misc.SendMessage(">> use gold to train with an NPC", colors["fatal"])
-            break
-        elif Player.GetRealSkillValue("Carpentry") < 70.0:
-            itemToCraft = carpentryCraftables["club"]
-        elif Player.GetRealSkillValue("Carpentry") < 100.0:
-            itemToCraft = carpentryCraftables["blank scroll"]
-
-        enoughResourcesToCraftWith = True
-        numberOfItems = {}
-        for resource in itemToCraft.resourcesNeeded:
-            if resource == "boards":
-                numberOfBoards = FindNumberOfItems(0x1BD7, Player.Backpack, 0x0000)[
-                    0x1BD7
-                ]
-                numberOfBoards += FindNumberOfItems(0x1BDD, Player.Backpack, 0x0000)[
-                    0x1BDD
-                ]
-                if numberOfBoards < itemToCraft.resourcesNeeded["boards"]:
-                    enoughResourcesToCraftWith = False
-                    break
-            elif resource == "cloth":
-                numberOfItems["cloth"] = FindNumberOfItems(
-                    0x1766, Player.Backpack, 0x0000
-                )[0x1766]
-                if numberOfItems["cloth"] < itemToCraft.resourcesNeeded["cloth"]:
-                    enoughResourcesToCraftWith = False
-                    break
-            elif resource == "spider's silk":
-                numberOfItems["spider's silk"] = FindNumberOfItems(
-                    0x0F8D, Player.Backpack, 0x0000
-                )[0x0F8D]
-                if (
-                    numberOfItems["spider's silk"]
-                    < itemToCraft.resourcesNeeded["spider's silk"]
-                ):
-                    enoughResourcesToCraftWith = False
-                    break
-
-        if not enoughResourcesToCraftWith:
-            Misc.SendMessage(">> out of resources", colors["fatal"])
-            return
-
-        Items.UseItem(tool)
-        for path in itemToCraft.gumpPath:
-            Gumps.WaitForGump(path.gumpID, 2000)
-            Gumps.SendAction(path.gumpID, path.buttonID)
-
-        # close the Carpentry gump (signals that crafting has completed, since the gump will have reopened)
-        Gumps.WaitForGump(itemToCraft.gumpPath[0].gumpID, 5000)
-        Gumps.SendAction(itemToCraft.gumpPath[0].gumpID, 0)
-
-        # wait a moment for the item to appear in the player's backpack
-        Misc.Pause(200)
-
-        # move the item out of the player's backpack
-        itemType = None
-        if itemToCraft.name == "club":
-            itemType = 0x13B4
-        elif itemToCraft.name == "blank scroll":
-            itemType = 0x0EF3
-        item = FindItem(itemType, Player.Backpack)
-
-        if item is None:
-            if slayerBag != None and Journal.SearchByType(
-                "You have successfully crafted a slayer", "Regular"
-            ):
-                Journal.Clear()
-                if slayerBag == "pet":
-                    pet = FindPet()
-                    MoveItem(Items, Misc, item, pet.Backpack)
-                    Misc.Pause(config.dragDelayMilliseconds)
-                else:
-                    MoveItem(Items, Misc, item, slayerBag)
-            else:
-                MoveItem(Items, Misc, item, trashBarrel)
-
-
-# start Carpentry training
-TrainCarpentry()
+EnableSellingAgent("carpentry")
+TrainCarpentrySkill(craftConfig)

@@ -9,8 +9,9 @@ Skill: Fletching
 import Items, Player, Misc, Target
 from glossary.crafting.fletching import (
     fletchName,
-    fletchingGump,
-    fletchingTools,
+    fletchGump,
+    fletchTools,
+    fletchCraftables,
 )
 from glossary.colors import colors
 from utils.crafting import TrainCraftSkill
@@ -55,8 +56,6 @@ depositItems = [
 # do not edit below this line
 
 # init
-playerBag = Player.Backpack.Serial
-
 # check for runebook
 if not Misc.CheckSharedValue("young_runebook"):
     Misc.ScriptRun("_startup.py")
@@ -103,7 +102,7 @@ craftConfig = {
     "restockContainer": restockContainer,
     "depositItems": depositItems,
     # player settings
-    "playerBag": playerBag,
+    "playerBag": Player.Backpack,
     "runebook": runebook_serial,
     "house_rune": house_rune,
     # bank settings
@@ -115,8 +114,9 @@ craftConfig = {
     "vendorPosition": (sellX, sellY),
     # skill settings
     "skillName": fletchName,
-    "skillGump": fletchingGump,
-    "skillTools": fletchingTools,
+    "skillGump": fletchGump,
+    "skillTools": fletchTools,
+    "skillCraftables": fletchCraftables,
     # skill path to use: "skill" or "profit"
     "usePath": "skill",
     # a dictionary of skill paths and their values

@@ -1,138 +1,79 @@
-import Player, Misc
-from glossary.colors import colors
 from glossary.crafting.craftable import Craftable
 from glossary.items.weapons import weapons
 from glossary.items.miscellaneous import miscellaneous
-from utils.items import FindItem, FindNumberOfItems
 from glossary.items.tools import tools
 from glossary.items.boards import boards
 from utils.gumps import GumpSelection
 
 fletchName = "Fletching"
-fletchingGump = 949095101
-fletchingTools = [tools["arrow fletching"]]
+fletchGump = 949095101
+fletchTools = [tools["arrow fletching"]]
 
-
-class FletchingCraftable(Craftable):
-    def __init__(
-        self, Name, Item, RetainsMark, RetainsColor, MinSkill, ResourcesNeeded, GumpPath
-    ):
-        self.Name = Name
-        self.Item = Item
-        self.RetainsMark = RetainsMark
-        self.RetainsColor = RetainsColor
-        self.MinSkill = MinSkill
-        self.ResourcesNeeded = ResourcesNeeded
-        self.GumpPath = GumpPath
-
-        # call the parent class's constructor using super()
-        super().__init__(Name, MinSkill, ResourcesNeeded, GumpPath)
-
-
-def GetCraftable(itemName=""):
-    craftable = fletchingCraftables[itemName]
-    if craftable is None:
-        Misc.SendMessage(">> no such item in craft list", colors["fatal"])
-        return None
-    return craftable
-
-
-def HasResources(itemName, resourceBag=Player.Backpack):
-    craftable = fletchingCraftables[itemName]
-    if craftable is None:
-        Misc.SendMessage(">> no such item in craft list", colors["fatal"])
-        return False
-
-    # find current resources
-    resourcesNeeded = craftable.ResourcesNeeded
-    for resource, amountNeeded in resourcesNeeded.items():
-        resourceName = resource.name
-        resourceID = resource.itemID
-        currentResources = FindNumberOfItems(resourceID, resourceBag, 0x0000)
-
-        if currentResources.get(resourceID, 0) < amountNeeded:
-            Misc.SendMessage(">> out of resource: %s" % resourceName, colors["fail"])
-            Misc.SendMessage(
-                ">> out of resources for item: %s" % craftable.Name, colors["fail"]
-            )
-            return False
-    return True
-
-
-def GetResourcesNeededAsItemIDs(itemName):
-    craftable = fletchingCraftables[itemName]
-    if craftable is None:
-        Misc.SendMessage(">> no such item in craft list", colors["fatal"])
-        return [int]
-
-    return [resource.itemID for resource in craftable.ResourcesNeeded.keys()]
-
-
-fletchingCraftables = {
+fletchCraftables = {
     ### Materials: Gump Button 1 ###
-    "kindling": FletchingCraftable(
+    "kindling": Craftable(
         Name="kindling",
         Item=miscellaneous["kindling"],
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},
         ResourcesNeeded={boards["ordinary board"]: 1},
-        GumpPath=(GumpSelection(fletchingGump, 1), GumpSelection(fletchingGump, 2)),
+        GumpPath=(GumpSelection(fletchGump, 1), GumpSelection(fletchGump, 2)),
     ),
-    "shaft": FletchingCraftable(
+    "shaft": Craftable(
         Name="shaft",
         Item=None,
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},
         ResourcesNeeded={boards["ordinary board"]: 1},
-        GumpPath=(GumpSelection(fletchingGump, 1), GumpSelection(fletchingGump, 9)),
+        GumpPath=(GumpSelection(fletchGump, 1), GumpSelection(fletchGump, 9)),
     ),
     ### Ammunition: Gump Button 8 ###
-    "arrow": FletchingCraftable(
+    "arrow": Craftable(
         Name="arrow",
         Item=None,
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},
         ResourcesNeeded={miscellaneous["arrow shaft"]: 1, miscellaneous["feather"]: 1},
-        GumpPath=(GumpSelection(fletchingGump, 8), GumpSelection(fletchingGump, 2)),
+        GumpPath=(GumpSelection(fletchGump, 8), GumpSelection(fletchGump, 2)),
     ),
-    "crossbow bolt": FletchingCraftable(
+    "crossbow bolt": Craftable(
         Name="crossbow bolt",
         Item=None,
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},
         ResourcesNeeded={miscellaneous["arrow shaft"]: 1, miscellaneous["feather"]: 1},
-        GumpPath=(GumpSelection(fletchingGump, 8), GumpSelection(fletchingGump, 9)),
+        GumpPath=(GumpSelection(fletchGump, 8), GumpSelection(fletchGump, 9)),
     ),
     ### Weapons: Gump Button 15 ###
-    "crossbow": FletchingCraftable(
+    "crossbow": Craftable(
         Name="crossbow",
         Item=weapons["crossbow"],
         RetainsMark=True,
         RetainsColor=False,
         MinSkill={"fletching": 60.0},
         ResourcesNeeded={boards["ordinary board"]: 7},
-        GumpPath=(GumpSelection(fletchingGump, 15), GumpSelection(fletchingGump, 2)),
+        GumpPath=(GumpSelection(fletchGump, 15), GumpSelection(fletchGump, 2)),
     ),
-    "bow": FletchingCraftable(
+    "bow": Craftable(
         Name="bow",
         Item=weapons["bow"],
         RetainsMark=True,
         RetainsColor=False,
         MinSkill={"fletching": 30.0},
         ResourcesNeeded={boards["ordinary board"]: 7},
-        GumpPath=(GumpSelection(fletchingGump, 15), GumpSelection(fletchingGump, 9)),
+        GumpPath=(GumpSelection(fletchGump, 15), GumpSelection(fletchGump, 9)),
     ),
-    "heavy crossbow": FletchingCraftable(
+    "heavy crossbow": Craftable(
         Name="heavy crossbow",
         Item=weapons["heavy crossbow"],
         RetainsMark=True,
         RetainsColor=False,
         MinSkill={"fletching": 80.0},
         ResourcesNeeded={boards["ordinary board"]: 10},
-        GumpPath=(GumpSelection(fletchingGump, 15), GumpSelection(fletchingGump, 16)),
+        GumpPath=(GumpSelection(fletchGump, 15), GumpSelection(fletchGump, 16)),
     ),
 }
