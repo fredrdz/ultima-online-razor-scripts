@@ -1,45 +1,48 @@
+from glossary.crafting.craftable import Craftable
+from glossary.items.miscellaneous import miscellaneous
 from glossary.items.tools import tools
 from utils.gumps import GumpSelection
 
-cartographyTools = [tools["mapmaker's pen"], tools["pen and ink"]]
+cartName = "Cartography"
+cartGump = 949095101
+cartTools = [tools["mapmaker's pen"], tools["pen and ink"]]
 
 
-class CartographyCraftable:
-    name = None
-    minSkill = None
-    resourcesNeeded = None
-    gumpPath = None
-
-    def __init__(self, name, minSkill, resourcesNeeded, gumpPath):
-        self.name = name
-        self.minSkill = minSkill
-        self.resourcesNeeded = resourcesNeeded
-        self.gumpPath = gumpPath
-
-
-cartographyCraftables = {
-    "local map": CartographyCraftable(
-        name="local map",
-        minSkill=10.0,
-        resourcesNeeded={"blank scroll": 1},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 2)),
+cartCraftables = {
+    "local map": Craftable(
+        Name="local map",
+        Item=miscellaneous["map"],
+        RetainsMark=False,
+        RetainsColor=False,
+        MinSkill=10.0,
+        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 2)),
     ),
-    "city map": CartographyCraftable(
-        name="city map",
-        minSkill=25.0,
-        resourcesNeeded={"blank scroll": 1},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 9)),
+    "city map": Craftable(
+        Name="city map",
+        Item=miscellaneous["map"],
+        RetainsMark=False,
+        RetainsColor=False,
+        MinSkill=25.0,
+        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 9)),
     ),
-    "sea map": CartographyCraftable(
-        name="sea map",
-        minSkill=35.0,
-        resourcesNeeded={"blank scroll": 1},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 16)),
+    "sea map": Craftable(
+        Name="sea map",
+        Item=miscellaneous["map"],
+        RetainsMark=False,
+        RetainsColor=False,
+        MinSkill=35.0,
+        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 16)),
     ),
-    "world map": CartographyCraftable(
-        name="world map",
-        minSkill=39.5,
-        resourcesNeeded={"blank scroll": 1},
-        gumpPath=(GumpSelection(949095101, 1), GumpSelection(949095101, 23)),
+    "world map": Craftable(
+        Name="world map",
+        Item=miscellaneous["map"],
+        RetainsMark=False,
+        RetainsColor=False,
+        MinSkill=39.5,
+        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 23)),
     ),
 }

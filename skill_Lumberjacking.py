@@ -8,9 +8,10 @@ Skill: Lumberjacking
 # System packages
 import sys
 import math
+import time
+import random
 from System.Collections.Generic import List
 from System import Byte
-import random
 
 # custom RE packages
 import Friend, Gumps, Items, Journal, Player, Misc, Mobiles, Statics, Target, Timer
@@ -295,6 +296,8 @@ def ScanStatic(trees=List[Tree]) -> List[Tree]:
     for x in range(minX, maxX + 1):
         for y in range(minY, maxY + 1):
             staticsTileInfo = Statics.GetStaticsTileInfo(x, y, Player.Map)
+            # might reduce client crash by throttling tile lookups
+            time.sleep(0.0005)  # 0.5 milliseconds
             if staticsTileInfo:
                 for tile in staticsTileInfo:
                     if tile.StaticID in treeStaticIDs and not Timer.Check(f"{x},{y}"):
@@ -530,6 +533,7 @@ def SafteyNet():
     if runaway is True:
         if IsEnemy() is True:
             Misc.Beep()
+            Misc.Beep()
             Audio_say("enemy detected")
             RecallNext(runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE)
 
@@ -540,6 +544,8 @@ def SafteyNet():
             Misc.Beep()
             Audio_say("player is here")
         elif invul:
+            Misc.Beep()
+            Misc.Beep()
             Misc.Beep()
             Misc.FocusUOWindow()
             Audio_say("GM here")

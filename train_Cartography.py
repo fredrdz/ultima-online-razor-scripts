@@ -3,142 +3,150 @@ SCRIPT: train_Cartography.py
 Author: Talik Starr
 IN:RISEN
 Skill: Cartography
-TODO: use new utils/glossary changes, currently broken
 """
 
-import config
-import Gumps, Items, Player, Misc
-from glossary.items.containers import FindTrashBarrel
-from glossary.items.miscellaneous import miscellaneous
-from glossary.crafting.cartography import cartographyTools, cartographyCraftables
+# custom RE packages
+import Items, Player, Misc, Target
+from glossary.crafting.cartography import (
+    cartName,
+    cartGump,
+    cartTools,
+    cartCraftables,
+)
 from glossary.colors import colors
-from utils.items import FindItem, FindNumberOfItems, MoveItem, RestockAgent
-from utils.status import Overweight
-from utils.actions import Chat_on_position, Sell_items
-from utils.item_actions.common import RecallBank, use_runebook
-from utils.pathing import Position, RazorPathing, Get_position
+from utils.crafting import TrainCraftSkill
+from utils.items import EnableSellingAgent
 
-character_name = "Talik Starr"
-young_runebook_serial = config.characters[character_name]["young_runebook"]["serial"]
-bank_rune = config.characters[character_name]["young_runebook"]["bank_rune_slot"]
-vendor_rune = 4  # slot number in runebook, 1 of 16
+# ---------------------------------------------------------------------
+# script configuration; modify these per your requirements
 
-# map x/y coordinates
-vendorName = "Gage"
-sellX = 1417
-sellY = 1755
-bankX = 3699
-bankY = 2520
+# setting a secure container will disable bank restocking
+# will restock from here instead; useful for crafting in house
+secureContainer = 0x40125C18
+# will toss successful crafts into trash barrel
+throwAwayItems = True
+# will vendor sell after full backpack or if overweight
+sellItems = False
 
+# vendor selling parameters
+vendorName = "Slade"
+sellX = 1470
+sellY = 1581
 
-def FindTool(container):
-    """
-    Searches for a mapmaking tool in the specified container
-    """
+# slot number in runebook, 1 of 16
+bank_rune = 1
+house_rune = 2
+vendor_rune = 3
 
-    # find the tool to craft with
-    for tool in cartographyTools:
-        tool = FindItem(tool.itemID, container)
-        if tool is not None:
-            return tool
+# bank parameters
+# only use bank from this x,y coordinate
+bankX = 1424
+bankY = 1683
+# disabled if secure container in use
+containerInBank = 0x40054709
 
+# items to deposit in bank bag or secure container
+# a list of tuples containing itemID and count
+depositItems = [
+    (0x0EED, -1),  # gold
+    (0x0EF3, -1),  # blank scrolls
+]
 
-def Bank(x=0, y=0):
-    if x == 0 or y == 0:
-        bank_position = Get_position("no bank configured...")
+# ---------------------------------------------------------------------
+# do not edit below this line
+
+# init
+# check for runebook
+if not Misc.CheckSharedValue("young_runebook"):
+    Misc.ScriptRun("_startup.py")
+if Misc.CheckSharedValue("young_runebook"):
+    runebook_serial = Misc.ReadSharedValue("young_runebook")
+else:
+    runebook_serial = Target.PromptTarget(
+        ">> target the runebook with th bank, house, and vendor rune", colors["notice"]
+    )
+
+# check what type of restock container we're using;
+# only one instance of secureContainer or containerInBank may exist;
+# not both; one will be set to None
+if secureContainer is not None:
+    # secure container was specified; use it
+    restockContainer = secureContainer
+    containerInBank = None
+elif containerInBank is not None:
+    # container in bank was specified; use it
+    restockContainer = containerInBank
+else:
+    # no container was specified; prompt for one
+    restockContainer = Target.PromptTarget(
+        ">> target your restocking container", colors["notice"]
+    )
+    containerAsItem = Items.FindBySerial(restockContainer)
+    # check if container is in bank
+    if containerAsItem.IsInBank is False:
+        Misc.SendMessage(f">> {containerAsItem.Name} was not in bank", colors["status"])
+        secureContainer = restockContainer
+        containerInBank = None
     else:
-        bank_position = Position(int(x), int(y))
-
-    if not RazorPathing(bank_position.X, bank_position.Y):
-        Misc.SetSharedValue("pathFindingOverride", (bank_position.X, bank_position.Y))
-        Misc.ScriptRun("pathfinding.py")
-    Chat_on_position("bank", bank_position)
+        Misc.SendMessage(f">> {containerAsItem.Name} was in bank", colors["status"])
+        containerInBank = restockContainer
+        secureContainer = None
 
 
-def Restock():
-    RestockAgent("cartography")
-    Misc.Pause(3000)
+craftConfig = {
+    # script flags
+    "sellItems": sellItems,
+    "throwAwayItems": throwAwayItems,
+    # container settings
+    "containerInBank": containerInBank,
+    "restockContainer": restockContainer,
+    "depositItems": depositItems,
+    # player settings
+    "playerBag": Player.Backpack,
+    "runebook": runebook_serial,
+    "house_rune": house_rune,
+    # bank settings
+    "bank_rune": bank_rune,
+    "bankPosition": (bankX, bankY),
+    # vendor settings
+    "vendor_rune": vendor_rune,
+    "vendorName": vendorName,
+    "vendorPosition": (sellX, sellY),
+    # skill settings
+    "skillName": cartName,
+    "skillGump": cartGump,
+    "skillTools": cartTools,
+    "skillCraftables": cartCraftables,
+    # skill path to use: "skill" or "profit"
+    "usePath": "skill",
+    # a dictionary of skill paths and their values
+    # define what item names to craft and up to which maximum skill value
+    "paths": {
+        "skill": {"world map": 100.0},
+        "profit": {
+            "local map": 25.0,
+            "city map": 50.0,
+            "sea map": 75.0,
+            "world map": 100.0,
+        },
+    },
+}
 
-    RestockAgent("recall")
-    Misc.Pause(3000)
 
-
-def TrainCartography(throwAwayMaps=True):
+# ---------------------------------------------------------------------
+# script functions
+def TrainCartographySkill(
+    craftConfig={},
+):
     """
-    Trains Cartography to its skill cap
+    Trains Cartography skill to its skill cap
     """
-
-    if Player.GetRealSkillValue("Cartography") == Player.GetSkillCap("Cartography"):
-        Misc.SendMessage(">> maxed out cartography skill", colors["notice"])
-        return
-
-    tool = FindTool(Player.Backpack)
-    if tool is None:
-        Misc.SendMessage(">> no tools to train with", colors["fatal"])
-        return
-
-    trashBarrel = None
-    if throwAwayMaps:
-        trashBarrel = FindTrashBarrel()
-        if trashBarrel is None:
-            Misc.SendMessage(">> no trash barrel nearby...", colors["fatal"])
-            Misc.SendMessage(
-                ">> move closer to one to throw away maps", colors["fatal"]
-            )
-            return
-
-    while not Player.IsGhost and Player.GetRealSkillValue("Cartography") < 95.5:
-        # make sure the tool isn't broken. If it is broken, this will return None
-        tool = Items.FindBySerial(tool.Serial)
-        if tool is None:
-            tool = FindTool(Player.Backpack)
-            if tool is None:
-                Misc.SendMessage(">> no tools to train with", colors["fatal"])
-                return
-
-        # select the item to craft
-        itemToCraft = None
-        if Player.GetSkillValue("Cartography") < 50.0:
-            itemToCraft = cartographyCraftables["local map"]
-        elif Player.GetSkillValue("Cartography") < 65.0:
-            itemToCraft = cartographyCraftables["city map"]
-        elif Player.GetSkillValue("Cartography") < 100:
-            itemToCraft = cartographyCraftables["world map"]
-
-        blankScrolls = FindNumberOfItems(
-            miscellaneous["blank scroll"].itemID, Player.Backpack, 0x0000
-        )
-        if (
-            blankScrolls[miscellaneous["blank scroll"].itemID]
-            < itemToCraft.resourcesNeeded["blank scroll"]
-        ):
-            Misc.SendMessage(">> out of resources", colors["fatal"])
-            return
-
-        Items.UseItem(tool)
-        for path in itemToCraft.GumpPath:
-            Gumps.WaitForGump(path.GumpID, 2000)
-            Gumps.SendAction(path.GumpID, path.ButtonID)
-
-        # wait for crafting to finish and close the gump
-        Gumps.WaitForGump(949095101, 2000)
-        Gumps.SendAction(949095101, 0)
-
-        mapID = miscellaneous["map"].itemID
-        items = FindNumberOfItems(mapID, Player.Backpack)
-        if not throwAwayMaps:
-            if Overweight(Player.MaxWeight) or items[mapID] > 100:
-                # use_runebook(young_runebook_serial, vendor_rune)
-                # Misc.Pause(config.recallDelay + config.shardLatency)
-                Sell_items((sellX, sellY), vendorName, mapID)
-                # RecallBank(young_runebook_serial, bank_rune)
-                # Bank(bankX, bankY)
-                # Restock()
-        else:
-            map = FindItem(mapID, Player.Backpack)
-            if map is not None and throwAwayMaps:
-                MoveItem(Items, Misc, map, trashBarrel)
+    TrainCraftSkill(craftConfig)
+    return
 
 
-# Start Cartography training
-TrainCartography(throwAwayMaps=False)
+# ---------------------------------------------------------------------
+# main script process
+
+EnableSellingAgent("cartography")
+TrainCartographySkill(craftConfig)
