@@ -203,10 +203,13 @@ def Bank(runebook, rune, x=0, y=0):
         Misc.Pause(2000)
 
     # pathfind to bank if not at bank calling coordinates
-    if IsPosition(x, y) is False:
+    while IsPosition(x, y) is False:
+        Misc.Pause(100)
         if RazorPathing(x, y) is False:
-            Misc.SetSharedValue("pathFindingOverride", (x, y))
-            Misc.ScriptRun("pathfinding.py")
+            if Misc.ScriptStatus("pathfinding.py") is False:
+                Misc.SetSharedValue("pathFindingOverride", (x, y))
+                Misc.ScriptRun("pathfinding.py")
+                Misc.Pause(1000)
 
     # use bank via chat; only does it if on bank coordinates
     Chat_on_position("bank", (x, y))
@@ -297,7 +300,7 @@ def ScanStatic(trees=List[Tree]) -> List[Tree]:
         for y in range(minY, maxY + 1):
             staticsTileInfo = Statics.GetStaticsTileInfo(x, y, Player.Map)
             # might reduce client crash by throttling tile lookups
-            time.sleep(0.0005)  # 0.5 milliseconds
+            time.sleep(0.001)  # 1 milliseconds
             if staticsTileInfo:
                 for tile in staticsTileInfo:
                     if tile.StaticID in treeStaticIDs and not Timer.Check(f"{x},{y}"):
