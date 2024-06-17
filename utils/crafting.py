@@ -112,11 +112,11 @@ def Bank(runebook, bankRune, x=0, y=0):
 
 def Restock(itemList, src, dst=Player.Backpack.Serial) -> bool:
     if not itemList:
-        Misc.Message(">> no items requested for restock", colors["fatal"])
+        Misc.SendMessage(">> no items requested for restock", colors["fatal"])
         return False
 
     if src is None or not isinstance(src, int):
-        Misc.Message(">> no source container specified", colors["fatal"])
+        Misc.SendMessage(">> no source container specified", colors["fatal"])
         return False
 
     difference = []
@@ -130,7 +130,7 @@ def Restock(itemList, src, dst=Player.Backpack.Serial) -> bool:
             difference.append((id, required_count - dst_count))
 
     if not difference:
-        Misc.Message(">> no items need restocking", colors["success"])
+        Misc.SendMessage(">> no items need restocking", colors["success"])
         return True
 
     MoveItemsByCount(difference, src, dst)

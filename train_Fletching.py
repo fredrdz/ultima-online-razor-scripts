@@ -126,7 +126,8 @@ craftConfig = {
         "profit": {
             "bow": 60.0,
             "crossbow": 80.0,
-            "heavy crossbow": 100.0,
+            "heavy crossbow": 98.0,
+            "elven bow": 100.0,
         },
     },
 }

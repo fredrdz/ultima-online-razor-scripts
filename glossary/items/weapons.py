@@ -95,6 +95,9 @@ weapons = {
     "heavy crossbow": myItem(
         name="heavy crossbow", itemID=0x13FD, color=0x0000, category="weapon", weight=9
     ),
+    "elven bow": myItem(
+        name="elven bow", itemID=0x13B2, color=0x0237, category="weapon", weight=6
+    ),
     # Wooden
     "black staff": myItem(
         name="black staff", itemID=0x0DF0, color=0x0000, category="weapon", weight=6

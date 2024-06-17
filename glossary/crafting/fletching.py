@@ -76,4 +76,14 @@ fletchCraftables = {
         ResourcesNeeded={boards["ordinary board"]: 10},
         GumpPath=(GumpSelection(fletchGump, 15), GumpSelection(fletchGump, 16)),
     ),
+    ### Materials: Gump Button 22 ###
+    "elven bow": Craftable(
+        Name="elven bow",
+        Item=weapons["elven bow"],
+        RetainsMark=True,
+        RetainsColor=True,
+        MinSkill={"fletching": 89.5},
+        ResourcesNeeded={boards["oak board"]: 7},
+        GumpPath=(GumpSelection(fletchGump, 22), GumpSelection(fletchGump, 2)),
+    ),
 }
