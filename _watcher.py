@@ -5,7 +5,7 @@ scripts_to_watch = [
     "_defense.py",
     # "skill_Lumberjacking.py",
     # "train_AnimalTaming.py",
-    "train_Carpentry.py",
+    # "train_Carpentry.py",
 ]
 
 # watch/autorun scripts if stopped

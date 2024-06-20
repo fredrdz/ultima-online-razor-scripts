@@ -1,5 +1,5 @@
 # change depending on the latency to your UO shard
-shardLatency = 100
+shardLatency = 150
 journalEntryDelayMilliseconds = 150
 targetClearDelayMilliseconds = 150
 dragDelayMilliseconds = 600

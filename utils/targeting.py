@@ -18,7 +18,7 @@ def AttackFromEnemyFilter():
 
         Target.SetLast(enemy)
     else:
-        Player.HeadMessage(colors["red"], "No enemies nearby!")
+        Player.HeadMessage(colors["status"], "No enemies nearby!")
 
     Misc.Pause(100)
 
@@ -36,7 +36,7 @@ def AttackFromEnemyList():
 
         Target.SetLast(enemy)
     else:
-        Player.HeadMessage(colors["red"], "No enemies nearby!")
+        Player.HeadMessage(colors["status"], "No enemies nearby!")
 
     Misc.Pause(100)
 
