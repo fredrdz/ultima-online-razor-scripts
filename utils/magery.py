@@ -1,12 +1,13 @@
 # Description: Magery related functions
 
 # System packages
-from System.Collections.Generic import List
 from System import Byte
+from System import Int32
+from System.Collections.Generic import List
 
 # Custom RE packages
 import config
-import Journal, Misc, Mobiles, Player, Spells, Target, Timer
+import Journal, Misc, Mobiles, Player, Spells, Sound, Target, Timer
 from glossary.colors import colors
 from glossary.spells import reagents, spells
 from utils.items import FindNumberOfItems
@@ -25,28 +26,39 @@ def Teleport():
 
 
 def Meditation():
+    # init
     Journal.Clear()
-
-    Player.HeadMessage(colors["status"], "[meditate]")
+    Sound.Log(False)
+    sounds = List[Int32]([249])  # meditation sound
+    # use skill
     Player.UseSkill("Meditation")
-
-    while Player.Mana < Player.ManaMax:
-        Misc.Pause(100)
-
-        if Player.WarMode or Player.Hits < Player.HitsMax:
-            Player.HeadMessage(colors["fail"], "[meditated]")
-            break
-
-        if Journal.SearchByType("You cannot focus your concentration.", "System"):
-            Player.HeadMessage(colors["fail"], "[meditated]")
-            break
-
-        if Journal.SearchByType(
-            "You are preoccupied with thoughts of battle.", "System"
-        ):
-            Player.SetWarMode(True)
-            Player.HeadMessage(colors["fail"], "[meditated]")
-            break
+    # skill checks
+    if Journal.SearchByType("You are preoccupied with thoughts of battle.", "System"):
+        Player.HeadMessage(colors["fail"], "[battle]")
+        return
+    elif Journal.WaitJournal("You begin meditating...", 5000):
+        if Journal.WaitJournal("You enter a meditative trance.", 5000):
+            Player.HeadMessage(colors["success"], "[meditating]")
+            while Player.Mana < Player.ManaMax:
+                Misc.Pause(100)
+                if Player.WarMode or Player.Hits < Player.HitsMax:
+                    Player.HeadMessage(colors["fail"], "[combat]")
+                    break
+                elif Journal.SearchByType(
+                    "You cannot focus your concentration.", "System"
+                ):
+                    Player.HeadMessage(colors["fail"], "[concentration]")
+                    break
+                elif Journal.SearchByType(
+                    "You are preoccupied with thoughts of battle.", "System"
+                ):
+                    Player.HeadMessage(colors["fail"], "[battle]")
+                    break
+                elif Sound.WaitForSound(sounds, 1000) is False:
+                    break
+    # success check
+    if Player.Mana == Player.ManaMax:
+        Player.HeadMessage(colors["success"], "[full mp]")
 
 
 def FindReagents():
@@ -125,13 +137,14 @@ def CastSpellRepeatably(spellName, target=None):
     Journal.Clear()
     enemy = None
     enemies = []
-    Timer.Create("cast_cd", 1)
+    if Misc.ReadSharedValue("cast_cd") > 0:
+        Timer.Create("cast_cd", Misc.ReadSharedValue("cast_cd"))
 
     # filter for enemies
     enemyFilter = Mobiles.Filter()
     enemyFilter.Enabled = True
-    enemyFilter.RangeMin = -1
-    enemyFilter.RangeMax = -1
+    enemyFilter.RangeMin = 1
+    enemyFilter.RangeMax = 10
     enemyFilter.CheckLineOfSight = True
     enemyFilter.Poisoned = -1
     enemyFilter.IsHuman = -1
@@ -140,19 +153,20 @@ def CastSpellRepeatably(spellName, target=None):
     enemyFilter.Friend = False
     enemyFilter.Paralized = -1
     enemyFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
+    # blue = 1, green = 2, grey = 3, grey(aggro) = 4, orange = 5, red = 6
 
     # check if target is provided
     if target is None:
         # get enemies
         enemies = Mobiles.ApplyFilter(enemyFilter)
+        # filter out enemies named "bob"
+        for i in range(len(enemies) - 1, -1, -1):
+            if enemies[i].Name == "bob":
+                del enemies[i]
         # check if enemies found and select one
         if len(enemies) > 0:
-            # exception: we name our friendly followers "bob"
-            # dont select bob
-            for e in enemies:
-                if e.Name != "bob":
-                    # select nearest enemy
-                    enemy = e
+            # select nearest enemy
+            enemy = Mobiles.Select(enemies, "Nearest")
 
     if enemy:
         # stop defense script while attacking
@@ -189,9 +203,9 @@ def CastSpellRepeatably(spellName, target=None):
                 Player.HeadMessage(colors["fail"], "[no reagents]")
                 break
             elif Timer.Check("cast_cd") is True:
+                Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
                 continue
-            # exception checks
-            if spellName == "Poison":
+            elif spellName == "Poison":
                 if enemy.Poisoned:
                     Player.HeadMessage(colors["success"], "[enemy poisoned]")
                     break
@@ -202,6 +216,10 @@ def CastSpellRepeatably(spellName, target=None):
             Target.ClearLastandQueue()
             CastSpellOnTarget(enemy, spellName, 0)
             Timer.Create("cast_cd", spells[spellName].delayInMs + config.shardLatency)
+            Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
+            # debug
+            # Sound.Log(True)
+            # sounds = List[Int32]([249])  # meditation sound
             # exception checks
             if spellName == "Curse":
                 break
@@ -227,9 +245,16 @@ def StopAllCastsExcept(castScript):
         "cast_Fireball.py",
         "cast_Explosion.py",
         "cast_EnergyBolt.py",
+        "cast_Flamestrike.py",
     ]
 
     for script in scripts:
         if Misc.ScriptStatus(script) and script != castScript:
             Misc.ScriptStop(script)
-        Misc.Pause(50)
+
+
+def FindScroll(spellname):
+    """
+    Finds a scroll in the player's backpack.
+    Searches recursively.
+    """

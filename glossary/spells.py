@@ -250,22 +250,22 @@ spells = {
     "Feeblemind": SpellInfo(
         "Feeblemind", 1, spellReagents["Feeblemind"], 4, 0.0, 0.5, 500
     ),
-    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.5, 500),
+    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.6, 600),
     "Magic Arrow": SpellInfo(
-        "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 0.5, 1000
+        "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 1, 1000
     ),
     "Night Sight": SpellInfo(
         "Night Sight", 1, spellReagents["Night Sight"], 4, 0.0, 0.5, 500
     ),
     "Reactive Armor": SpellInfo(
-        "Reactive Armor", 1, spellReagents["Reactive Armor"], 4, 0.0, 0.5, 500
+        "Reactive Armor", 1, spellReagents["Reactive Armor"], 4, 0.0, 1, 1000
     ),
     "Weaken": SpellInfo("Weaken", 1, spellReagents["Weaken"], 4, 0.0, 0.5, 500),
     # Second Circle
     "Agility": SpellInfo("Agility", 2, spellReagents["Agility"], 6, 0.0, 0.75, 750),
     "Cunning": SpellInfo("Cunning", 2, spellReagents["Cunning"], 6, 0.0, 0.75, 750),
-    "Cure": SpellInfo("Cure", 2, spellReagents["Cure"], 6, 0.0, 0.75, 1000),
-    "Harm": SpellInfo("Harm", 2, spellReagents["Harm"], 6, 0.0, 0.75, 2000),
+    "Cure": SpellInfo("Cure", 2, spellReagents["Cure"], 6, 0.0, 1, 1000),
+    "Harm": SpellInfo("Harm", 2, spellReagents["Harm"], 6, 0.0, 2, 2000),
     "Magic Trap": SpellInfo(
         "Magic Trap", 2, spellReagents["Magic Trap"], 6, 0.0, 0.75, 750
     ),
@@ -273,16 +273,16 @@ spells = {
         "Magic Untrap", 2, spellReagents["Magic Untrap"], 6, 0.0, 0.75, 750
     ),
     "Protection": SpellInfo(
-        "Protection", 2, spellReagents["Protection"], 6, 0.0, 0.75, 750
+        "Protection", 2, spellReagents["Protection"], 6, 0.0, 1, 1000
     ),
     "Strength": SpellInfo("Strength", 2, spellReagents["Strength"], 6, 0.0, 0.75, 750),
     # Third Circle
-    "Bless": SpellInfo("Bless", 3, spellReagents["Bless"], 9, 9.0, 1.0, 1000),
-    "Fireball": SpellInfo("Fireball", 3, spellReagents["Fireball"], 9, 9.0, 1.0, 2350),
+    "Bless": SpellInfo("Bless", 3, spellReagents["Bless"], 9, 9.0, 2, 2000),
+    "Fireball": SpellInfo("Fireball", 3, spellReagents["Fireball"], 9, 9.0, 2.35, 2350),
     "Magic Lock": SpellInfo(
         "Magic Lock", 3, spellReagents["Magic Lock"], 9, 9.0, 1.0, 1000
     ),
-    "Poison": SpellInfo("Poison", 3, spellReagents["Poison"], 9, 9.0, 1.0, 2000),
+    "Poison": SpellInfo("Poison", 3, spellReagents["Poison"], 9, 9.0, 2, 2000),
     "Telekinesis": SpellInfo(
         "Telekinesis", 3, spellReagents["Telekinesis"], 9, 9.0, 1.0, 1000
     ),
@@ -298,15 +298,15 @@ spells = {
     "Arch Protection": SpellInfo(
         "Arch Protection", 4, spellReagents["Arch Protection"], 11, 24.0, 1.25, 1250
     ),
-    "Curse": SpellInfo("Curse", 4, spellReagents["Curse"], 11, 24.0, 1.25, 2000),
+    "Curse": SpellInfo("Curse", 4, spellReagents["Curse"], 11, 24.0, 2, 2000),
     "Fire Field": SpellInfo(
         "Fire Field", 4, spellReagents["Fire Field"], 11, 24.0, 1.25, 2000
     ),
     "Greater Heal": SpellInfo(
-        "Greater Heal", 4, spellReagents["Greater Heal"], 11, 24.0, 1.25, 1250
+        "Greater Heal", 4, spellReagents["Greater Heal"], 11, 24.0, 2, 2350
     ),
     "Lightning": SpellInfo(
-        "Lightning", 4, spellReagents["Lightning"], 11, 24.0, 1.25, 2350
+        "Lightning", 4, spellReagents["Lightning"], 11, 24.0, 2.35, 2350
     ),
     "Mana Drain": SpellInfo(
         "Mana Drain", 4, spellReagents["Mana Drain"], 11, 24.0, 1.25, 1250
@@ -323,7 +323,7 @@ spells = {
         "Incognito", 5, spellReagents["Incognito"], 14, 38.0, 1.5, 1500
     ),
     "Magic Reflection": SpellInfo(
-        "Magic Reflection", 5, spellReagents["Magic Reflection"], 14, 38.0, 1.5, 1500
+        "Magic Reflection", 5, spellReagents["Magic Reflection"], 14, 38.0, 3.5, 3500
     ),
     "Mind Blast": SpellInfo(
         "Mind Blast", 5, spellReagents["Mind Blast"], 14, 38.0, 1.5, 2350
@@ -338,12 +338,12 @@ spells = {
         "Summon Creature", 5, spellReagents["Summon Creature"], 14, 38.0, 6.0, 6000
     ),
     # Sixth Circle
-    "Dispel": SpellInfo("Dispel", 6, spellReagents["Dispel"], 20, 52.0, 1.75, 1750),
+    "Dispel": SpellInfo("Dispel", 6, spellReagents["Dispel"], 20, 52.0, 3, 3000),
     "Energy Bolt": SpellInfo(
-        "Energy Bolt", 6, spellReagents["Energy Bolt"], 20, 52.0, 1.75, 3000
+        "Energy Bolt", 6, spellReagents["Energy Bolt"], 20, 52.0, 3.35, 3350
     ),
     "Explosion": SpellInfo(
-        "Explosion", 6, spellReagents["Explosion"], 20, 52.0, 1.75, 3000
+        "Explosion", 6, spellReagents["Explosion"], 20, 52.0, 3, 3000
     ),
     "Invisibility": SpellInfo(
         "Invisibility", 6, spellReagents["Invisibility"], 20, 52.0, 1.75, 1750
@@ -364,7 +364,7 @@ spells = {
         "Energy Field", 7, spellReagents["Energy Field"], 40, 67.0, 2.0, 2000
     ),
     "Flamestrike": SpellInfo(
-        "Flamestrike", 7, spellReagents["Flamestrike"], 40, 67.0, 2.0, 3000
+        "Flamestrike", 7, spellReagents["Flamestrike"], 40, 67.0, 3.35, 3350
     ),
     "Gate Travel": SpellInfo(
         "Gate Travel", 7, spellReagents["Gate Travel"], 40, 67.0, 2.0, 2000
@@ -401,7 +401,7 @@ spells = {
         2250,
     ),
     "Summon Daemon": SpellInfo(
-        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 2.25, 4250
+        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 4.5, 4500
     ),
     "Summon Earth Elemental": SpellInfo(
         "Summon Earth Elemental",

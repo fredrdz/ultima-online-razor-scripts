@@ -9,6 +9,7 @@ from glossary.colors import colors
 from glossary.spells import spells
 
 # init
+Journal.Clear()
 enemy = None
 enemies = []
 daemon = 0x0009
@@ -18,8 +19,8 @@ Timer.Create("kill_cd", 1)
 # filter for enemies
 enemyFilter = Mobiles.Filter()
 enemyFilter.Enabled = True
-enemyFilter.RangeMin = -1
-enemyFilter.RangeMax = -1
+enemyFilter.RangeMin = 1
+enemyFilter.RangeMax = 10
 enemyFilter.CheckLineOfSight = True
 enemyFilter.Poisoned = -1
 enemyFilter.IsHuman = -1
@@ -50,13 +51,16 @@ while not Player.IsGhost:
 
     # check if we can summon a daemon
     follower_diff = Player.FollowersMax - Player.Followers
-    if 0 < follower_diff >= 2 and Player.Mana >= 40:
+    if 0 < follower_diff >= 2 and Player.Mana >= 50:
         Spells.CastMagery("Summon Daemon")
         Misc.Pause(spells["Summon Daemon"].delayInMs + config.shardLatency)
 
     # get enemies
     enemies = Mobiles.ApplyFilter(enemyFilter)
-
+    # filter out enemies named "bob"
+    for i in range(len(enemies) - 1, -1, -1):
+        if enemies[i].Name == "bob":
+            del enemies[i]
     # check if enemies found and select one
     if len(enemies) > 0:
         for e in enemies:
@@ -65,11 +69,9 @@ while not Player.IsGhost:
             if e.MobileID == daemon and e.Name != "bob":
                 Misc.PetRename(e, "bob")
                 Player.ChatSay(colors["chat"], "All Guard Me")
-            elif e.Name != "bob":
+            else:
                 # select nearest enemy
-                enemy = e
-    else:
-        enemy = None
+                enemy = Mobiles.Select(enemies, "Nearest")
 
     # if enemy is found, select and kill
     if enemy and Timer.Check("kill_cd") is False:
@@ -78,7 +80,10 @@ while not Player.IsGhost:
             colors["warning"],
             ">> enemy",
         )
+        Target.ClearLastandQueue()
         Player.ChatSay(colors["chat"], "All Kill")
         Target.WaitForTarget(2000, False)
         Target.TargetExecute(enemy)
         Timer.Create("kill_cd", 5000)
+
+    enemy = None
