@@ -31,6 +31,7 @@ from utils.item_actions.common import (
     RecallCurrent,
     RecallPrevious,
     RecallBank,
+    use_runebook,
 )
 from utils.items import MoveItemsByCount
 from utils.status import Overweight
@@ -103,6 +104,7 @@ class Tree:
 
 # init
 trees = []
+Timer.Create("tracking_cd", 1)
 playerBag = Player.Backpack.Serial
 
 # check for runebook
@@ -414,9 +416,10 @@ def CutTree():
     Target.TargetExecute(trees[0].x, trees[0].y, trees[0].z, trees[0].id)
 
     # init timers
-    Timer.Create("chopTimer", 10000)
+    Timer.Create("chop_timeout", 10000)
     Timer.Create("safteyNet", 1)
 
+    # wait for tree to be chopped until t/o
     while not (
         Journal.SearchByType(
             "You hack at the tree for a while, but fail to produce any useable wood.",
@@ -426,12 +429,14 @@ def CutTree():
         or Journal.SearchByType("There's not enough wood here to harvest.", "System")
         or Journal.Search("Target cannot be seen")
         or Journal.Search("That is too far away")
-        or not Timer.Check("chopTimer")
+        or not Timer.Check("chop_timeout")
     ):
-        Misc.Pause(random.randint(50, 150))
-        if Timer.Check("safteyNet") is False:
-            SafteyNet()
-            Timer.Create("safteyNet", 2000)
+        Misc.Pause(100)
+
+    # if here, we are not chopping, so we do checks
+    if Timer.Check("safteyNet") is False:
+        SafteyNet()
+        Timer.Create("safteyNet", 2000)
 
     if Journal.SearchByType("There's not enough wood here to harvest.", "System"):
         Misc.SendMessage(">> no wood here", colors["status"])
@@ -440,31 +445,44 @@ def CutTree():
     elif Journal.Search("That is too far away"):
         Misc.SendMessage(">> blocked; cannot target", colors["warning"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
-        return
     elif Journal.Search("Target cannot be seen"):
         Misc.SendMessage(">> blocked; cannot target", colors["warning"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
-        return
-    elif Timer.Check("chopTimer") is False:
+    elif Timer.Check("chop_timeout") is False:
         Misc.SendMessage(">> tree change", colors["status"])
         Timer.Create("%i,%i" % (trees[0].x, trees[0].y), treeCooldown)
     elif Journal.Search("bloodwood"):
         Misc.SendMessage(">> bloodwood!", colors["status"])
-        Timer.Create("chopTimer", 10000)
+        Timer.Create("chop_timeout", 10000)
         CutTree()
     elif Journal.Search("heartwood"):
         Misc.SendMessage(">> heartwood!", colors["status"])
-        Timer.Create("chopTimer", 10000)
+        Timer.Create("chop_timeout", 10000)
         CutTree()
     elif Journal.Search("frostwood"):
         Misc.SendMessage(">> frostwood!", colors["status"])
-        Timer.Create("chopTimer", 10000)
+        Timer.Create("chop_timeout", 10000)
         CutTree()
     else:
         CutTree()
 
 
 # ---------------------------------------------------------------------
+# safteyNet
+
+enemyFilter = Mobiles.Filter()
+enemyFilter.Enabled = True
+enemyFilter.RangeMin = -1
+enemyFilter.RangeMax = -1
+enemyFilter.Poisoned = -1
+enemyFilter.IsHuman = -1
+enemyFilter.IsGhost = False
+enemyFilter.Warmode = -1
+enemyFilter.Friend = False
+enemyFilter.Paralized = -1
+enemyFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
+
+
 def IsEnemy():
     enemies = Mobiles.ApplyFilter(enemyFilter)
     if not enemies or len(enemies) == 0:
@@ -481,39 +499,57 @@ def IsEnemy():
     return True
 
 
-def IsPlayer(talkDetect=False):
-    players = Mobiles.ApplyFilter(playerFilter)
-    if not players or len(players) == 0:
-        return False
+playerFilter = Mobiles.Filter()
+playerFilter.Enabled = True
+playerFilter.RangeMin = -1
+playerFilter.RangeMax = -1
+playerFilter.CheckLineOfSight = False
+playerFilter.Poisoned = -1
+playerFilter.IsHuman = True
+playerFilter.IsGhost = False
+playerFilter.Warmode = -1
+playerFilter.Friend = False
+playerFilter.Paralized = -1
+playerFilter.Notorieties = List[Byte](bytes([1, 4, 5, 6]))
 
-    nearestPlayer = Mobiles.Select(players, "Nearest")
 
-    if nearestPlayer and talkDetect is True:
-        chatLog = Journal.GetTextByName(nearestPlayer.Name, True)
-        if chatLog:
-            if len(chatLog) > 1:
-                Mobiles.Message(
-                    nearestPlayer,
-                    colors["warning"],
-                    ">> player detected",
-                )
-                Misc.SendMessage(
-                    f">> player talking: {nearestPlayer.Name}", colors["alert"]
-                )
-                for chat in chatLog:
-                    Misc.SendMessage(f">> player said: {chat} ", colors["alert"])
-                    Journal.Clear()
-                return True
-    else:
-        Mobiles.Message(
-            nearestPlayer,
-            colors["warning"],
-            ">> player detected",
-        )
-        Misc.SendMessage(">> player near: " + nearestPlayer.Name, colors["alert"])
-        return True
+def IsPlayer():
+    # mobile filter: short range player detection
+    # safteyNet runs every 2 seconds
+    humans = Mobiles.ApplyFilter(playerFilter)
+    if len(humans) > 0:
+        Timer.Create("tracking_cd", 1)
+        Misc.SendMessage(">> human nearby", colors["warning"])
+        Misc.Pause(1000)
 
+    # tracking skill: long range player detection
+    # 20 second cooldown unless overridden by short range detection
+    if Timer.Check("tracking_cd") is False:
+        Misc.SendMessage(">> checking for players...", colors["status"])
+        Player.UseSkill("Tracking", False)
+        Timer.Create("tracking_cd", 20000)
+        Gumps.WaitForGump(2976808305, 2000)
+        if Gumps.CurrentGump() == 2976808305:
+            Gumps.SendAction(2976808305, 4)
+            Gumps.WaitForGump(993494147, 2000)
+            if Gumps.CurrentGump() == 993494147:
+                Misc.SendMessage(">> found players", colors["alert"])
+                player_list = Gumps.LastGumpGetLineList()
+                if player_list:
+                    player_list = [str(line) for line in player_list]
+                    for player in player_list:
+                        Misc.SendMessage(f"-- {player}", colors["alert"])
+                    Gumps.CloseGump(993494147)
+                    return True
     return False
+
+
+invulFilter = Mobiles.Filter()
+invulFilter.Enabled = True
+invulFilter.RangeMin = -1
+invulFilter.RangeMax = -1
+invulFilter.Friend = False
+invulFilter.Notorieties = List[Byte](bytes([7]))
 
 
 def SafteyNet():
@@ -527,11 +563,6 @@ def SafteyNet():
                 Misc.FocusUOWindow()
                 sys.exit()
 
-    # close any gumps that may be opened to avoid issues
-    if Gumps.HasGump():
-        opened_gump_id = Gumps.CurrentGump()
-        Gumps.CloseGump(opened_gump_id)
-
     # checks runaway flag; recalls away from enemies if detected
     if runaway is True:
         if IsEnemy() is True:
@@ -543,9 +574,16 @@ def SafteyNet():
     # monitors mobiles and alerts if found
     if alert:
         invul = Mobiles.ApplyFilter(invulFilter)
-        if IsPlayer(talkDetect=True) is True:
+        if IsPlayer() is True:
+            Misc.Beep()
             Misc.Beep()
             Audio_say("player is here")
+            Misc.FocusUOWindow()
+            rb = Misc.ReadSharedValue("young_runebook")
+            use_runebook(rb, 1)
+            Misc.Pause(2000)
+            Player.UseSkill("Hiding", False)
+            sys.exit()
         elif invul:
             Misc.Beep()
             Misc.Beep()
@@ -554,41 +592,16 @@ def SafteyNet():
             Audio_say("GM here")
             invulName = Mobiles.Select(invul, "Nearest")
             if invulName:
-                Misc.SendMessage(">> invul near:" + invul.Name, colors["alert"])
-        else:
-            Misc.NoOperation()
+                Misc.SendMessage(">> invul near:" + invul.Name, colors["warning"])
+
+    # close any gumps that may be opened to avoid issues
+    if Gumps.HasGump():
+        opened_gump_id = Gumps.CurrentGump()
+        Gumps.CloseGump(opened_gump_id)
 
 
 # ---------------------------------------------------------------------
 # main process
-enemyFilter = Mobiles.Filter()
-enemyFilter.Enabled = True
-enemyFilter.RangeMin = -1
-enemyFilter.RangeMax = -1
-enemyFilter.Poisoned = -1
-enemyFilter.IsHuman = -1
-enemyFilter.IsGhost = False
-enemyFilter.Warmode = -1
-enemyFilter.Friend = False
-enemyFilter.Paralized = -1
-enemyFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
-
-playerFilter = Mobiles.Filter()
-playerFilter.Enabled = True
-playerFilter.RangeMin = -1
-playerFilter.RangeMax = -1
-playerFilter.IsHuman = True
-playerFilter.Friend = False
-playerFilter.Notorieties = List[Byte](bytes([1, 4, 5, 6]))
-
-invulFilter = Mobiles.Filter()
-invulFilter.Enabled = True
-invulFilter.RangeMin = -1
-invulFilter.RangeMax = -1
-invulFilter.Friend = False
-invulFilter.Notorieties = List[Byte](bytes([7]))
-
-Friend.ChangeList("lj")
 Misc.SendMessage(">> lumberjack starting up...", colors["notice"])
 
 while not Player.IsGhost:

@@ -1,3 +1,7 @@
+# system packages
+import sys
+
+# custom RE packages
 import config
 import Items, Journal, Misc, Player, Target, Timer
 from utils.items import FindItem
@@ -8,6 +12,7 @@ from glossary.spells import spells
 from glossary.colors import colors
 
 # init
+# global cast cd timer
 if Misc.ReadSharedValue("cast_cd") > 0:
     Timer.Create("cast_cd", Misc.ReadSharedValue("cast_cd"))
 
@@ -35,7 +40,6 @@ while not Player.IsGhost:
             and Player.Mana >= spells["Cure"].manaCost
             and CheckReagents("Cure")
         ):
-            Target.ClearLastandQueue()
             CastSpellOnSelf("Cure", 0)
             Timer.Create("cast_cd", spells["Cure"].delayInMs + config.shardLatency)
             Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
@@ -50,7 +54,6 @@ while not Player.IsGhost:
         and Timer.Check("cast_cd") is False
     ):
         Player.HeadMessage(colors["fail"], "[paralyzed]")
-        Target.ClearLastandQueue()
         if Player.Mana >= spells["Magic Arrow"].manaCost and CheckReagents(
             "Magic Arrow"
         ):
@@ -73,26 +76,24 @@ while not Player.IsGhost:
         Timer.Create("bandage_cd", 2300 + config.shardLatency)
 
     if (
-        0 < hp_diff > 80
-        and Player.Mana >= spells["Heal"].manaCost
-        and Timer.Check("cast_cd") is False
-    ):
-        Target.ClearLastandQueue()
-        if CheckReagents("Heal"):
-            CastSpellOnSelf("Heal", 0)
-            Timer.Create("cast_cd", spells["Heal"].delayInMs + config.shardLatency)
-            Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
-    elif (
-        0 < hp_diff > 60
+        0 < hp_diff >= 90
         and Player.Mana >= spells["Greater Heal"].manaCost
         and Timer.Check("cast_cd") is False
     ):
-        Target.ClearLastandQueue()
         if CheckReagents("Greater Heal"):
             CastSpellOnSelf("Greater Heal", 0)
             Timer.Create(
                 "cast_cd", spells["Greater Heal"].delayInMs + config.shardLatency
             )
+            Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
+    elif (
+        0 < hp_diff >= 30
+        and Player.Mana >= spells["Heal"].manaCost
+        and Timer.Check("cast_cd") is False
+    ):
+        if CheckReagents("Heal"):
+            CastSpellOnSelf("Heal", 0)
+            Timer.Create("cast_cd", spells["Heal"].delayInMs + config.shardLatency)
             Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
 
     # check mp
@@ -103,29 +104,17 @@ while not Player.IsGhost:
 
     if Timer.Check("pot_cd") is False:
         # mana pots
-        if 0 < mp_diff > 80:
+        if 0 < mp_diff >= 40:
             mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
             if mana_pot:
                 Player.HeadMessage(colors["status"], "[gmana pot]")
                 Items.UseItem(mana_pot)
                 Timer.Create("pot_cd", 1000)
-        elif 0 < mp_diff > 60:
-            mana_pot = FindItem(potions["mana potion"].itemID, Player.Backpack)
-            if mana_pot:
-                Player.HeadMessage(colors["status"], "[mana pot]")
-                Items.UseItem(mana_pot)
-                Timer.Create("pot_cd", 1000)
         # heal pots
-        elif 0 < hp_diff > 80:
+        elif 0 < hp_diff >= 40:
             heal_pot = FindItem(potions["greater heal potion"].itemID, Player.Backpack)
             if heal_pot:
                 Player.HeadMessage(colors["status"], "[gheal pot]")
-                Items.UseItem(heal_pot)
-                Timer.Create("pot_cd", 1000)
-        elif 0 < hp_diff > 60:
-            heal_pot = FindItem(potions["heal potion"].itemID, Player.Backpack)
-            if heal_pot:
-                Player.HeadMessage(colors["status"], "[heal pot]")
                 Items.UseItem(heal_pot)
                 Timer.Create("pot_cd", 1000)
 

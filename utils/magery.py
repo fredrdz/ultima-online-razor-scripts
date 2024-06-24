@@ -7,10 +7,11 @@ from System.Collections.Generic import List
 
 # Custom RE packages
 import config
-import Journal, Misc, Mobiles, Player, Spells, Sound, Target, Timer
+import Items, Journal, Misc, Mobiles, Player, Spells, Sound, Target, Timer
 from glossary.colors import colors
 from glossary.spells import reagents, spells
-from utils.items import FindNumberOfItems
+from glossary.items.scrolls import mageryScrolls
+from utils.items import FindItem, FindNumberOfItems
 
 
 def RecallRune(rune):
@@ -38,7 +39,7 @@ def Meditation():
         return
     elif Journal.WaitJournal("You begin meditating...", 5000):
         if Journal.WaitJournal("You enter a meditative trance.", 5000):
-            Player.HeadMessage(colors["success"], "[meditating]")
+            Player.HeadMessage(colors["debug"], "[meditating]")
             while Player.Mana < Player.ManaMax:
                 Misc.Pause(100)
                 if Player.WarMode or Player.Hits < Player.HitsMax:
@@ -58,7 +59,31 @@ def Meditation():
                     break
     # success check
     if Player.Mana == Player.ManaMax:
-        Player.HeadMessage(colors["success"], "[full mp]")
+        Player.HeadMessage(colors["debug"], "[full mp]")
+
+
+# ---------------------------------------------------------------------
+# Reagents and scrolls
+
+
+def FindScrollBySpell(spellname):
+    """
+    Uses FindItem to recursively search for a specific spell scroll in backpack.
+    Returns the item object if found, otherwise None.
+    """
+    # validate
+    if not isinstance(spellname, str) or not spellname:
+        Misc.SendMessage(">> invalid spell scroll name", colors["fatal"])
+        Misc.Pause(5000)
+        return None
+
+    scroll_name = spellname + " scroll"
+
+    if scroll_name in mageryScrolls:
+        scroll_id = mageryScrolls[scroll_name].itemID
+        return FindItem(scroll_id, Player.Backpack)
+    else:
+        return None
 
 
 def FindReagents():
@@ -89,18 +114,33 @@ def CheckReagents(spellName, numberOfCasts=1):
 
 
 # ---------------------------------------------------------------------
+# Casting magery spells
+
+
 def CastSpellOnSelf(spellName, delay=None):
     """
     Casts a spell self (on the player)
     """
+    # validate
+    if not isinstance(spellName, str) or not spellName:
+        Misc.SendMessage(">> invalid spell name", colors["fatal"])
+        Misc.Pause(5000)
+        return
+    # init
     spell = spells[spellName]
+    scroll = FindScrollBySpell(spell.name)
 
-    Spells.CastMagery(spell.name)
+    if scroll:
+        # Player.HeadMessage(colors["debug"], f"[scroll: {spell.name}]")
+        Items.UseItem(scroll)
+    else:
+        Spells.CastMagery(spell.name)
+
     Target.WaitForTarget(2000, False)
     Target.Self()
 
     if delay is None or not isinstance(delay, int):
-        # Use default delay if delay is None or not an int
+        # use default delay if delay is None or not an int
         delay = spell.delayInMs + config.shardLatency
 
     Misc.Pause(delay)
@@ -116,17 +156,45 @@ def CastSpellOnTarget(target, spellName, delay=None):
     """
     Casts a spell on the target
     """
+    # validate
+    if not isinstance(spellName, str) or not spellName:
+        Misc.SendMessage(">> invalid spell name", colors["fatal"])
+        Misc.Pause(5000)
+        return
+    # init
     spell = spells[spellName]
+    scroll = FindScrollBySpell(spell.name)
 
-    Spells.CastMagery(spell.name)
+    if scroll:
+        # Player.HeadMessage(colors["debug"], f"[scroll: {spell.name}]")
+        Items.UseItem(scroll)
+    else:
+        Spells.CastMagery(spell.name)
+
     Target.WaitForTarget(2000, False)
     Target.TargetExecute(target)
 
     if delay is None or not isinstance(delay, int):
-        # Use default delay if delay is None or not an int
+        # use default delay if delay is None or not an int
         delay = spell.delayInMs + config.shardLatency
 
     Misc.Pause(delay)
+
+
+# filter for enemies
+castFilter = Mobiles.Filter()
+castFilter.Enabled = True
+castFilter.RangeMin = 1
+castFilter.RangeMax = 10
+castFilter.CheckLineOfSight = True
+castFilter.Poisoned = -1
+castFilter.IsHuman = -1
+castFilter.IsGhost = False
+castFilter.Warmode = -1
+castFilter.Friend = False
+castFilter.Paralized = -1
+castFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
+# blue = 1, green = 2, grey = 3, grey(aggro) = 4, orange = 5, red = 6
 
 
 def CastSpellRepeatably(spellName, target=None):
@@ -135,30 +203,22 @@ def CastSpellRepeatably(spellName, target=None):
     """
     # init
     Journal.Clear()
-    enemy = None
+    enemy = target
     enemies = []
-    if Misc.ReadSharedValue("cast_cd") > 0:
-        Timer.Create("cast_cd", Misc.ReadSharedValue("cast_cd"))
-
-    # filter for enemies
-    enemyFilter = Mobiles.Filter()
-    enemyFilter.Enabled = True
-    enemyFilter.RangeMin = 1
-    enemyFilter.RangeMax = 10
-    enemyFilter.CheckLineOfSight = True
-    enemyFilter.Poisoned = -1
-    enemyFilter.IsHuman = -1
-    enemyFilter.IsGhost = False
-    enemyFilter.Warmode = -1
-    enemyFilter.Friend = False
-    enemyFilter.Paralized = -1
-    enemyFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
-    # blue = 1, green = 2, grey = 3, grey(aggro) = 4, orange = 5, red = 6
+    Timer.Create("defend_check_cd", 1)
+    # checks for shared spell casting cooldown to prevent fizzling
+    cast_cd = Misc.ReadSharedValue("cast_cd")
+    if cast_cd > 0:
+        Timer.Create("cast_cd", cast_cd)
+    # overwrites enemy mob target via script shared value if one is set
+    shared_target = Misc.ReadSharedValue("kill_target")
+    if shared_target > 0:
+        enemy = Mobiles.FindBySerial(shared_target)
 
     # check if target is provided
-    if target is None:
+    if not enemy:
         # get enemies
-        enemies = Mobiles.ApplyFilter(enemyFilter)
+        enemies = Mobiles.ApplyFilter(castFilter)
         # filter out enemies named "bob"
         for i in range(len(enemies) - 1, -1, -1):
             if enemies[i].Name == "bob":
@@ -169,11 +229,11 @@ def CastSpellRepeatably(spellName, target=None):
             enemy = Mobiles.Select(enemies, "Nearest")
 
     if enemy:
-        # stop defense script while attacking
-        if Misc.ScriptStatus("_defense.py"):
+        # stop defense script
+        if Misc.ScriptStatus("_defense.py") is True:
             Misc.ScriptStop("_defense.py")
         # start attacking
-        Player.HeadMessage(colors["success"], f"[targeting {enemy.Name}]")
+        Player.HeadMessage(colors["debug"], f"[targeting {enemy.Name}]")
         Mobiles.Message(
             enemy,
             colors["warning"],
@@ -183,21 +243,20 @@ def CastSpellRepeatably(spellName, target=None):
             Misc.Pause(100)
             # check player status and defend if necessary
             hp_diff = Player.HitsMax - Player.Hits
-            if 0 < hp_diff > 40 or Player.Poisoned:
+            if 0 < hp_diff >= 70 or Player.Poisoned:
                 Player.HeadMessage(colors["notice"], "[defending]")
-                if not Misc.ScriptStatus("_defense.py"):
+                if Misc.ScriptStatus("_defense.py") is False:
                     Misc.ScriptRun("_defense.py")
-                # stop attacking; exit script
-                return
+                    return
             # enemy and spell checks
             if not enemy:
-                Player.HeadMessage(colors["status"], "[enemy gone]")
+                Player.HeadMessage(colors["debug"], "[enemy gone]")
                 break
             elif enemy.IsGhost or enemy.Deleted:
-                Player.HeadMessage(colors["status"], "[enemy gone]")
+                Player.HeadMessage(colors["debug"], "[enemy gone]")
                 break
             elif Player.InRangeMobile(enemy, 14) is False:
-                Player.HeadMessage(colors["fail"], "[enemy los]")
+                Player.HeadMessage(colors["debug"], "[enemy los]")
                 break
             elif CheckReagents(spellName) is False:
                 Player.HeadMessage(colors["fail"], "[no reagents]")
@@ -213,7 +272,6 @@ def CastSpellRepeatably(spellName, target=None):
                     Player.HeadMessage(colors["notice"], "[enemy immune]")
                     break
             # actual spell cast
-            Target.ClearLastandQueue()
             CastSpellOnTarget(enemy, spellName, 0)
             Timer.Create("cast_cd", spells[spellName].delayInMs + config.shardLatency)
             Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
@@ -224,17 +282,18 @@ def CastSpellRepeatably(spellName, target=None):
             if spellName == "Curse":
                 break
     else:
-        Player.HeadMessage(colors["status"], "[no target]")
+        Player.HeadMessage(colors["debug"], "[no target]")
 
     # resume defense script
-    if not Misc.ScriptStatus("_defense.py"):
+    if Misc.ScriptStatus("_defense.py") is False:
         Misc.ScriptRun("_defense.py")
 
 
 # ---------------------------------------------------------------------
+# Script helpers
 def StopAllCastsExcept(castScript):
     """
-    Stops all spell casting scripts
+    Stops all spell casting scripts.
     """
     scripts = [
         "cast_Curse.py",
@@ -249,12 +308,6 @@ def StopAllCastsExcept(castScript):
     ]
 
     for script in scripts:
-        if Misc.ScriptStatus(script) and script != castScript:
-            Misc.ScriptStop(script)
-
-
-def FindScroll(spellname):
-    """
-    Finds a scroll in the player's backpack.
-    Searches recursively.
-    """
+        if Misc.ScriptStatus(script) is True:
+            if script != castScript:
+                Misc.ScriptStop(script)

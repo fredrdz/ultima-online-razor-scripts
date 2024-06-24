@@ -17,18 +17,18 @@ Timer.Create("cast_cd", 1)
 Timer.Create("kill_cd", 1)
 
 # filter for enemies
-enemyFilter = Mobiles.Filter()
-enemyFilter.Enabled = True
-enemyFilter.RangeMin = 1
-enemyFilter.RangeMax = 10
-enemyFilter.CheckLineOfSight = True
-enemyFilter.Poisoned = -1
-enemyFilter.IsHuman = -1
-enemyFilter.IsGhost = False
-enemyFilter.Warmode = -1
-enemyFilter.Friend = False
-enemyFilter.Paralized = -1
-enemyFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
+pvmFilter = Mobiles.Filter()
+pvmFilter.Enabled = True
+pvmFilter.RangeMin = 1
+pvmFilter.RangeMax = 10
+pvmFilter.CheckLineOfSight = True
+pvmFilter.Poisoned = -1
+pvmFilter.IsHuman = -1
+pvmFilter.IsGhost = False
+pvmFilter.Warmode = -1
+pvmFilter.Friend = False
+pvmFilter.Paralized = -1
+pvmFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
 
 # check if _defense.py is running
 if not Misc.ScriptStatus("_defense.py"):
@@ -40,23 +40,27 @@ while not Player.IsGhost:
     # check if our daemons are attacking friendlies
     if Journal.Search("*You see bob attacking you!*"):
         Journal.Clear()
-        Player.ChatSay(colors["chat"], "All Stop")
-        Player.ChatSay(colors["chat"], "All Guard Me")
+        Player.ChatSay(colors["debug"], "All Stop")
+        Player.ChatSay(colors["debug"], "All Guard Me")
         Misc.Pause(2000)
     elif Journal.Search("*You see bob attacking bob!*"):
         Journal.Clear()
-        Player.ChatSay(colors["chat"], "All Stop")
-        Player.ChatSay(colors["chat"], "All Guard Me")
+        Player.ChatSay(colors["debug"], "All Stop")
+        Player.ChatSay(colors["debug"], "All Guard Me")
         Misc.Pause(2000)
+    elif Timer.Check("cast_cd") is True:
+        Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
+        continue
 
     # check if we can summon a daemon
     follower_diff = Player.FollowersMax - Player.Followers
     if 0 < follower_diff >= 2 and Player.Mana >= 50:
         Spells.CastMagery("Summon Daemon")
-        Misc.Pause(spells["Summon Daemon"].delayInMs + config.shardLatency)
+        Timer.Create("cast_cd", spells["Summon Daemon"].delayInMs + config.shardLatency)
+        Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
 
     # get enemies
-    enemies = Mobiles.ApplyFilter(enemyFilter)
+    enemies = Mobiles.ApplyFilter(pvmFilter)
     # filter out enemies named "bob"
     for i in range(len(enemies) - 1, -1, -1):
         if enemies[i].Name == "bob":
@@ -68,7 +72,7 @@ while not Player.IsGhost:
             # if our daemon summon, rename, set to guard, and go to next target
             if e.MobileID == daemon and e.Name != "bob":
                 Misc.PetRename(e, "bob")
-                Player.ChatSay(colors["chat"], "All Guard Me")
+                Player.ChatSay(colors["debug"], "All Guard Me")
             else:
                 # select nearest enemy
                 enemy = Mobiles.Select(enemies, "Nearest")
@@ -81,9 +85,9 @@ while not Player.IsGhost:
             ">> enemy",
         )
         Target.ClearLastandQueue()
-        Player.ChatSay(colors["chat"], "All Kill")
+        Player.ChatSay(colors["debug"], "All Kill")
         Target.WaitForTarget(2000, False)
         Target.TargetExecute(enemy)
-        Timer.Create("kill_cd", 5000)
+        Timer.Create("kill_cd", 4000)
 
     enemy = None

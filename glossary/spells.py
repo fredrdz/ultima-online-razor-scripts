@@ -317,7 +317,7 @@ spells = {
         "Blade Spirits", 5, spellReagents["Blade Spirits"], 14, 38.0, 6.0, 6000
     ),
     "Dispel Field": SpellInfo(
-        "Dispel Field", 5, spellReagents["Dispel Field"], 14, 38.0, 1.5, 1500
+        "Dispel Field", 5, spellReagents["Dispel Field"], 14, 38.0, 3, 3000
     ),
     "Incognito": SpellInfo(
         "Incognito", 5, spellReagents["Incognito"], 14, 38.0, 1.5, 1500

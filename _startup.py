@@ -10,6 +10,7 @@ if Player.Name == "Talik Starr":
     Misc.SetSharedValue("young_runebook", 0x4003B289)
     # misc
     Misc.SetSharedValue("cast_cd", -1)
+    Misc.SetSharedValue("kill_target", -1)
     # agents
     if BuyAgent.Status() is False:
         BuyAgent.ChangeList("regs")

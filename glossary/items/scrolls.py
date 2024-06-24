@@ -1,6 +1,6 @@
 from utils.items import myItem
 
-spellScrolls = {
+mageryScrolls = {
     # First Circle
     "Clumsy scroll": myItem("Clumsy scroll", 0x1F2E, 0x0000, "magic scroll", 1),
     "Create Food scroll": myItem(

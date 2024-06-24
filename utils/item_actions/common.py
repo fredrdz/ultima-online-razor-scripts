@@ -1,5 +1,8 @@
+# custom RE packages
 import config
+import Gumps, Items, Player, Misc
 from glossary.gumps import gumps
+from glossary.colors import colors
 
 # ---------------------------------------------------------------------
 
