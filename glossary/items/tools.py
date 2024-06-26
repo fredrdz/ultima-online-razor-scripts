@@ -147,7 +147,7 @@ tools = {
         name="dyeing tub", itemID=0x0FAB, color=0x0000, category="tool", weight=10
     ),
     "fishing pole": myItem(
-        name="fishing pole", itemID=0x0DBF, color=0x0000, category="tool", weight=8
+        name="fishing pole", itemID=0x0DC0, color=0x0000, category="tool", weight=8
     ),
     "interior decorator": myItem(
         name="interior decorator",

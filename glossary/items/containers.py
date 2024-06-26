@@ -8,7 +8,7 @@ containers = {
     "bag": myItem("bag", 0x0E76, 0x0000, "container", 1),
     "barrel": myItem("barrel", 0x0E77, 0x0000, "container", 1),
     "crate": myItem("crate", 0x0E7E, 0x0000, "container", 1),
-    "hatch": myItem("hatch", 0x3EAE, 0x0000, "container", None),  # Can't be carried
+    "hatch": myItem("hatch", 0x3E65, 0x0000, "container", None),  # Can't be carried
     "metal chest (east/west)": myItem("metal chest", 0x0E7C, 0x0000, "container", 1),
     "metal chest (north/south)": myItem("metal chest", 0x2DF3, 0x0000, "container", 1),
     "ornate elven chest": myItem("ornate elven chest", 0x0E79, 0x0000, "container", 1),
@@ -21,7 +21,7 @@ containers = {
 
 def FindTrashBarrel():
     """
-    Locates a trash barrel within reach
+    Locates a trash barrel within reach.
     """
 
     global containers
@@ -44,7 +44,7 @@ def FindTrashBarrel():
 
 def FindHatch():
     """
-    Locates a hatch within reach
+    Locates a hatch within reach.
     """
 
     global containers

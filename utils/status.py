@@ -1,3 +1,6 @@
+import Player, Misc
+
+
 def Overweight(limit):
     if Player.Weight >= limit:
         Misc.Beep()

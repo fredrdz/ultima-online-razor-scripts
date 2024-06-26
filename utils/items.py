@@ -129,8 +129,8 @@ def RestockAgent(list: str):
 # ---------------------------------------------------------------------
 def FindItem(itemID, container, color=-1, ignoreContainer=[]):
     """
-    Searches through the container for the item IDs specified and returns the first one found
-    Also searches through any subcontainers, which Misc.FindByID() does not
+    Searches through the container for the item IDs specified and returns the first one found.
+    Also searches through any subcontainers, which Misc.FindByID() does not.
     """
 
     ignoreColor = False

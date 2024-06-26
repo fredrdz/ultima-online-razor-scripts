@@ -14,7 +14,7 @@ from System.Collections.Generic import List
 from System import Byte
 
 # custom RE packages
-import Friend, Gumps, Items, Journal, Player, Misc, Mobiles, Statics, Target, Timer
+import Gumps, Items, Journal, Player, Misc, Mobiles, Statics, Target, Timer
 from glossary.colors import colors
 from glossary.spells import spellReagents
 from utils.pathing import (
