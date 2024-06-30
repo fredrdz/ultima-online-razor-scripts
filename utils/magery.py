@@ -242,14 +242,13 @@ def CastSpellRepeatably(spellName, target=None):
         while Player.Mana > spells[spellName].manaCost:
             Misc.Pause(100)
             # check player status and defend if necessary
-            hp_diff = Player.HitsMax - Player.Hits
-            if 0 < hp_diff >= 70 or Player.Poisoned:
+            if 0 < (Player.HitsMax - Player.Hits) >= 65 or Player.Poisoned:
                 Player.HeadMessage(colors["notice"], "[defending]")
                 if Misc.ScriptStatus("_defense.py") is False:
                     Misc.ScriptRun("_defense.py")
                     return
             # enemy and spell checks
-            if not enemy:
+            elif not enemy:
                 Player.HeadMessage(colors["debug"], "[enemy gone]")
                 break
             elif enemy.IsGhost or enemy.Deleted:

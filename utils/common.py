@@ -17,6 +17,11 @@ from System.Collections.Generic import List
 from System import Byte, Int32
 
 
+def Beep(count=1):
+    for _ in range(count):
+        Misc.Beep()
+
+
 #
 def FindPets():
     pets = []

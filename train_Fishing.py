@@ -10,6 +10,7 @@ import sys
 import math
 import time
 from System import Byte
+from System import Int32
 from System.Collections.Generic import List
 
 # Custom RE packages
@@ -18,6 +19,7 @@ import Gumps, Items, Journal, Misc, Mobiles, Player, Statics, Target, Timer
 from glossary.colors import colors
 from glossary.items.containers import FindHatch
 from glossary.items.tools import tools
+from utils.magery import CastSpellRepeatably
 from utils.items import FindItem, MoveItemsByCount
 from utils.item_actions.common import (
     equip_right_hand,
@@ -27,13 +29,15 @@ from utils.item_actions.common import (
 from utils.status import Overweight
 from utils.gumps import is_afk_gump, get_afk_gump_button_options, solve_afk_gump
 from utils.actions import Audio_say
+from utils.common import Beep
 
 # ---------------------------------------------------------------------
 # True will move the boat with the 'foward' and 'backword' commands
 # False will move the boat with the 'left' and 'right' commands
 moveForwardBackward = True
 
-autoFightMacroName = "cast_EnergyBolt.py"
+# spell to cast when an enemy is detected
+spellName = "Lightning"
 
 fishCuttingTool = tools["cleaver"]
 leatherCuttingTool = tools["scissors"]
@@ -150,7 +154,7 @@ def Fishing(tile):
         or Journal.SearchByType(
             "Your fishing pole bends as you pull a big fish from the depths!", "System"
         )
-        or Journal.SearchByType("Uh oh! That doesn" "t look like a fish!", "System")
+        or Journal.SearchByType("Uh oh! That doesn't look like a fish!", "System")
     ):
         if (
             Timer.Check("timeout") is False
@@ -167,14 +171,6 @@ def Fishing(tile):
         Journal.Clear()
         Timer.Create(f"{tile.X},{tile.Y}", waterCooldown)
         return False
-
-    # move the fish and leather goods to the boat if at max weight
-    if Overweight(weightLimit):
-        # throw the fish and shoes into the boat's hatch
-        hatch = FindHatch()
-        if hatch:
-            Player.ChatSay(colors["debug"], "stop")
-            MoveItemsByCount(depositItems, Player.Backpack.Serial, hatch)
 
     # cut the fish and leather goods if player is overweight
     if Overweight(weightLimit):
@@ -210,6 +206,11 @@ def Fishing(tile):
                         Target.WaitForTarget(1000, False)
                         Target.TargetExecute(good)
                         Misc.Pause(config.dragDelayMilliseconds)
+        # throw the fish and shoes into the boat's hatch
+        hatch = FindHatch()
+        if hatch:
+            Player.ChatSay(colors["debug"], "stop")
+            MoveItemsByCount(depositItems, Player.Backpack.Serial, hatch)
 
     return True
 
@@ -219,8 +220,9 @@ def Fishing(tile):
 
 fishingMobFilter = Mobiles.Filter()
 fishingMobFilter.Enabled = True
-fishingMobFilter.RangeMin = -1
-fishingMobFilter.RangeMax = -1
+fishingMobFilter.RangeMin = 1
+fishingMobFilter.RangeMax = 5
+fishingMobFilter.CheckLineOfSight = True
 fishingMobFilter.Poisoned = -1
 fishingMobFilter.IsHuman = -1
 fishingMobFilter.IsGhost = False
@@ -244,6 +246,19 @@ def IsEnemy():
     )
 
     return nearestEnemy
+
+
+def FightEnemy(target=None):
+    CastSpellRepeatably(spellName, target)
+    # loot if corpse is found
+    corpseFilter = Items.Filter()
+    corpseFilter.Movable = False
+    corpseFilter.Graphics = List[Int32]([0x2006])
+    corpses = Items.ApplyFilter(corpseFilter)
+    for corpse in corpses:
+        for item in corpse.Contains:
+            Items.Move(item, Player.Backpack.Serial, 0)
+            Misc.Pause(config.dragDelayMilliseconds)
 
 
 playerFilter = Mobiles.Filter()
@@ -316,26 +331,6 @@ def IsInvul():
     return nearestInvul
 
 
-def FightEnemy(target=None):
-    enemy = target
-    if enemy:
-        Misc.ScriptRun(autoFightMacroName)
-        while enemy:
-            Misc.Pause(100)
-            if enemy.IsGhost or enemy.Deleted:
-                Player.HeadMessage(colors["debug"], "[enemy gone]")
-                break
-
-        corpseFilter = Items.Filter()
-        corpseFilter.Movable = False
-        corpseFilter.Graphics = List[int]([0x2006])
-        corpses = Items.ApplyFilter(corpseFilter)
-        for corpse in corpses:
-            for item in corpse.Contains:
-                Items.Move(item, Player.Backpack.Serial, 0)
-                Misc.Pause(config.dragDelayMilliseconds)
-
-
 def SafteyNet():
     # tries to auto solve afk gump or alerts if it fails
     if is_afk_gump():
@@ -349,14 +344,11 @@ def SafteyNet():
 
     # monitors mobiles and alerts if found
     if IsEnemy():
-        Misc.Beep()
-        Misc.Beep()
+        Beep(2)
         enemy = IsEnemy()
         FightEnemy(enemy)
     elif IsPlayer():
-        Misc.Beep()
-        Misc.Beep()
-        Misc.Beep()
+        Beep(3)
         Audio_say("player is here")
         Misc.FocusUOWindow()
         rb = Misc.ReadSharedValue("young_runebook")
@@ -365,9 +357,7 @@ def SafteyNet():
         Player.UseSkill("Hiding", False)
         sys.exit()
     elif IsInvul():
-        Misc.Beep()
-        Misc.Beep()
-        Misc.Beep()
+        Beep(4)
         Misc.FocusUOWindow()
         Audio_say("invulnerable here")
         sys.exit()

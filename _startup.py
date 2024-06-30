@@ -1,4 +1,5 @@
-import BuyAgent, Player, Misc
+import BuyAgent, Items, Player, Misc
+from glossary.items.containers import containers
 
 # set shared values based on player name
 if Player.Name == "Talik Starr":
@@ -17,7 +18,14 @@ if Player.Name == "Talik Starr":
         BuyAgent.Enable()
 
 
-# ---------------------------------------------------------------------
+# wait 5s to let client load in
+Misc.Pause(5000)
+
+# load containers/bags into memory
+# pouchs are trapped, so we don't include them
+for backpack_item in Player.Backpack.Contains:
+    if backpack_item.IsContainer and backpack_item.ItemID != containers["pouch"].itemID:
+        Items.UseItem(backpack_item)
+
 # autorun watcher service
-Misc.Pause(5000)  # wait 5s before running the scripts to let client load in
 Misc.ScriptRun("_watcher.py")
