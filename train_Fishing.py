@@ -255,10 +255,13 @@ def FightEnemy(target=None):
     corpseFilter.Movable = False
     corpseFilter.Graphics = List[Int32]([0x2006])
     corpses = Items.ApplyFilter(corpseFilter)
-    for corpse in corpses:
-        for item in corpse.Contains:
-            Items.Move(item, Player.Backpack.Serial, 0)
-            Misc.Pause(config.dragDelayMilliseconds)
+    if corpses:
+        Player.ChatSay(colors["debug"], "stop")
+        for corpse in corpses:
+            Misc.SendMessage(">> looting corpse", colors["status"])
+            for item in corpse.Contains:
+                Items.Move(item, Player.Backpack.Serial, 0)
+                Misc.Pause(config.dragDelayMilliseconds)
 
 
 playerFilter = Mobiles.Filter()
