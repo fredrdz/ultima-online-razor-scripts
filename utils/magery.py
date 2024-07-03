@@ -252,9 +252,12 @@ def CastSpellRepeatably(spellName, target=None):
                 Player.HeadMessage(colors["debug"], "[enemy gone]")
                 break
             elif enemy.IsGhost or enemy.Deleted:
-                Player.HeadMessage(colors["debug"], "[enemy gone]")
+                Player.HeadMessage(colors["debug"], "[enemy dead]")
                 break
             elif Player.InRangeMobile(enemy, 14) is False:
+                Player.HeadMessage(colors["debug"], "[enemy range]")
+                break
+            elif Journal.Search("Target cannot be seen."):
                 Player.HeadMessage(colors["debug"], "[enemy los]")
                 break
             elif CheckReagents(spellName) is False:

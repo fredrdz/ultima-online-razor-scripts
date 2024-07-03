@@ -71,7 +71,7 @@ while not Player.IsGhost:
         and Timer.Check("cast_cd") is False
     ):
         Items.UseItem(bandages)
-        Target.WaitForTarget(2000, False)
+        Target.WaitForTarget(1000, False)
         Target.Self()
         Timer.Create("bandage_cd", 2300 + config.shardLatency)
 

@@ -7,14 +7,13 @@ import config
 import Items, Journal, Misc, Mobiles, Player, Spells, Target, Timer
 from glossary.colors import colors
 from glossary.spells import spells
+from glossary.items.healing import FindBandage
 
 # init
 Journal.Clear()
 enemy = None
 enemies = []
 daemon = 0x0009
-Timer.Create("cast_cd", 1)
-Timer.Create("kill_cd", 1)
 
 # filter for enemies
 pvmFilter = Mobiles.Filter()
@@ -61,9 +60,20 @@ while not Player.IsGhost:
 
     # get enemies
     enemies = Mobiles.ApplyFilter(pvmFilter)
-    # filter out enemies named "bob"
+    # heal if needed and then filter out enemies named "bob"
     for i in range(len(enemies) - 1, -1, -1):
         if enemies[i].Name == "bob":
+            if enemies[i].Hits < enemies[i].HitsMax:
+                if (
+                    Timer.Check("bandage_cd") is False
+                    and Player.InRangeMobile(enemies[i], 2) is True
+                ):
+                    bandages = FindBandage(Player.Backpack)
+                    if bandages:
+                        Items.UseItem(bandages)
+                        Target.WaitForTarget(1000, False)
+                        Target.TargetExecute(enemies[i])
+                        Timer.Create("bandage_cd", 2300 + config.shardLatency)
             del enemies[i]
     # check if enemies found and select one
     if len(enemies) > 0:
@@ -73,9 +83,16 @@ while not Player.IsGhost:
             if e.MobileID == daemon and e.Name != "bob":
                 Misc.PetRename(e, "bob")
                 Player.ChatSay(colors["debug"], "All Guard Me")
-            else:
-                # select nearest enemy
-                enemy = Mobiles.Select(enemies, "Nearest")
+                continue
+            # overwrites enemy mob target via script shared value if one is set
+            shared_target = Misc.ReadSharedValue("kill_target")
+            if shared_target > 0:
+                enemy = Mobiles.FindBySerial(shared_target)
+                if enemy:
+                    break
+            # select nearest enemy if shared target not found
+            enemy = Mobiles.Select(enemies, "Nearest")
+            break
 
     # if enemy is found, select and kill
     if enemy and Timer.Check("kill_cd") is False:
@@ -86,8 +103,9 @@ while not Player.IsGhost:
         )
         Target.ClearLastandQueue()
         Player.ChatSay(colors["debug"], "All Kill")
-        Target.WaitForTarget(2000, False)
+        Target.WaitForTarget(1000, False)
         Target.TargetExecute(enemy)
         Timer.Create("kill_cd", 4000)
 
+    # if no enemy found, clear target
     enemy = None
