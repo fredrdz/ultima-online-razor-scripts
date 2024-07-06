@@ -9,7 +9,9 @@ if Player.Name == "Talik Starr":
     Misc.SetSharedValue("int", 120)
     # items
     Misc.SetSharedValue("young_runebook", 0x4003B289)
+    Misc.SetSharedValue("daily_runebook", 0x4012101D)
     # misc
+    Misc.SetSharedValue("spell", "")
     Misc.SetSharedValue("cast_cd", -1)
     Misc.SetSharedValue("kill_target", -1)
     # agents

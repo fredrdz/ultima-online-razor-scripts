@@ -1,11 +1,5 @@
-from utils.magery import CastSpellRepeatably, StopAllCastsExcept
+import Misc
 
-# init
 spellName = "Curse"
-scriptName = "cast_Curse.py"
-
-# stop other attack scripts before starting this one
-StopAllCastsExcept(scriptName)
-
-# go ham
-CastSpellRepeatably(spellName)
+Misc.SetSharedValue("spell", spellName)
+Misc.ScriptRun("_cast.py")

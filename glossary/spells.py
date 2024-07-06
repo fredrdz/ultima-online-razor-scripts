@@ -252,7 +252,7 @@ spells = {
     ),
     "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.6, 600),
     "Magic Arrow": SpellInfo(
-        "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 1, 1000
+        "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 1, 1025
     ),
     "Night Sight": SpellInfo(
         "Night Sight", 1, spellReagents["Night Sight"], 4, 0.0, 0.5, 500
@@ -323,7 +323,7 @@ spells = {
         "Incognito", 5, spellReagents["Incognito"], 14, 38.0, 1.5, 1500
     ),
     "Magic Reflection": SpellInfo(
-        "Magic Reflection", 5, spellReagents["Magic Reflection"], 14, 38.0, 3.5, 3500
+        "Magic Reflection", 5, spellReagents["Magic Reflection"], 14, 38.0, 3.5, 3400
     ),
     "Mind Blast": SpellInfo(
         "Mind Blast", 5, spellReagents["Mind Blast"], 14, 38.0, 1.5, 2350
@@ -401,7 +401,7 @@ spells = {
         2250,
     ),
     "Summon Daemon": SpellInfo(
-        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 4.5, 4500
+        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 4.8, 4800
     ),
     "Summon Earth Elemental": SpellInfo(
         "Summon Earth Elemental",

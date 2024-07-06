@@ -1,11 +1,5 @@
-from utils.magery import CastSpellRepeatably, StopAllCastsExcept
+import Misc
 
-# init
 spellName = "Energy Bolt"
-scriptName = "cast_EnergyBolt.py"
-
-# stop other attack scripts before starting this one
-StopAllCastsExcept(scriptName)
-
-# go ham
-CastSpellRepeatably(spellName)
+Misc.SetSharedValue("spell", spellName)
+Misc.ScriptRun("_cast.py")

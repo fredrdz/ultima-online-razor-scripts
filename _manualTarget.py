@@ -1,4 +1,4 @@
-import Misc, Mobiles, Player, Target
+import Journal, Misc, Mobiles, Player, Target
 from glossary.colors import colors
 
 """
@@ -11,11 +11,10 @@ That shared value is used in other scripts for targeting.
 
 target = Target.PromptTarget(">> select a target", colors["notice"])
 
-if not target or target == -1:
+if not target or target == -1 or target == Player.Serial:
     Player.HeadMessage(colors["status"], "[target cleared]")
-    Misc.SetSharedValue("kill_target", -1)
-elif target == Player.Serial:
-    Player.HeadMessage(colors["status"], "[self cleared]")
+    Journal.Clear()
+    Misc.SetSharedValue("spell", "")
     Misc.SetSharedValue("kill_target", -1)
 elif target:
     Misc.SetSharedValue("kill_target", target)
@@ -23,5 +22,5 @@ elif target:
     Mobiles.Message(
         target,
         colors["warning"],
-        ">> enemy",
+        ">> target <<",
     )

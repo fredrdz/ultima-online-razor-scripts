@@ -131,12 +131,12 @@ def CastSpellOnSelf(spellName, delay=None):
     scroll = FindScrollBySpell(spell.name)
 
     if scroll:
-        # Player.HeadMessage(colors["debug"], f"[scroll: {spell.name}]")
+        Player.HeadMessage(colors["debug"], f"[scroll: {spell.name}]")
         Items.UseItem(scroll)
     else:
         Spells.CastMagery(spell.name)
 
-    Target.WaitForTarget(2000, False)
+    Target.WaitForTarget(1000, False)
     Target.Self()
 
     if delay is None or not isinstance(delay, int):
@@ -171,7 +171,7 @@ def CastSpellOnTarget(target, spellName, delay=None):
     else:
         Spells.CastMagery(spell.name)
 
-    Target.WaitForTarget(2000, False)
+    Target.WaitForTarget(1000, False)
     Target.TargetExecute(target)
 
     if delay is None or not isinstance(delay, int):
@@ -185,7 +185,7 @@ def CastSpellOnTarget(target, spellName, delay=None):
 castFilter = Mobiles.Filter()
 castFilter.Enabled = True
 castFilter.RangeMin = 1
-castFilter.RangeMax = 10
+castFilter.RangeMax = 15
 castFilter.CheckLineOfSight = True
 castFilter.Poisoned = -1
 castFilter.IsHuman = -1
@@ -197,19 +197,15 @@ castFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
 # blue = 1, green = 2, grey = 3, grey(aggro) = 4, orange = 5, red = 6
 
 
-def CastSpellRepeatably(spellName, target=None):
+def CastSpellRepeatably(spellName="", enemy=None):
     """
     Casts a spell on the target multiple times
     """
-    # init
-    Journal.Clear()
-    enemy = target
-    enemies = []
-    Timer.Create("defend_check_cd", 1)
     # checks for shared spell casting cooldown to prevent fizzling
     cast_cd = Misc.ReadSharedValue("cast_cd")
     if cast_cd > 0:
         Timer.Create("cast_cd", cast_cd)
+
     # overwrites enemy mob target via script shared value if one is set
     shared_target = Misc.ReadSharedValue("kill_target")
     if shared_target > 0:
@@ -228,25 +224,29 @@ def CastSpellRepeatably(spellName, target=None):
             # select nearest enemy
             enemy = Mobiles.Select(enemies, "Nearest")
 
+    Journal.Clear()
+
     if enemy:
         # stop defense script
-        if Misc.ScriptStatus("_defense.py") is True:
-            Misc.ScriptStop("_defense.py")
+        Misc.ScriptStop("_defense.py")
         # start attacking
-        Player.HeadMessage(colors["debug"], f"[targeting {enemy.Name}]")
+        # Player.HeadMessage(colors["debug"], f"[targeting {enemy.Name}]")
         Mobiles.Message(
             enemy,
-            colors["warning"],
-            ">> enemy",
+            colors["alert"],
+            ">> spell target <<",
         )
-        while Player.Mana > spells[spellName].manaCost:
-            Misc.Pause(100)
+        while enemy:
+            Misc.Pause(25)
+            # check if player has changed requested spell
+            spellName = Misc.ReadSharedValue("spell")
             # check player status and defend if necessary
             if 0 < (Player.HitsMax - Player.Hits) >= 65 or Player.Poisoned:
-                Player.HeadMessage(colors["notice"], "[defending]")
-                if Misc.ScriptStatus("_defense.py") is False:
-                    Misc.ScriptRun("_defense.py")
-                    return
+                Player.HeadMessage(colors["alert"], "[defending]")
+                break
+            elif Player.Mana < spells[spellName].manaCost:
+                Player.HeadMessage(colors["fail"], "[oom]")
+                break
             # enemy and spell checks
             elif not enemy:
                 Player.HeadMessage(colors["debug"], "[enemy gone]")
@@ -258,6 +258,7 @@ def CastSpellRepeatably(spellName, target=None):
                 Player.HeadMessage(colors["debug"], "[enemy range]")
                 break
             elif Journal.Search("Target cannot be seen."):
+                Journal.Clear()
                 Player.HeadMessage(colors["debug"], "[enemy los]")
                 break
             elif CheckReagents(spellName) is False:
@@ -271,9 +272,12 @@ def CastSpellRepeatably(spellName, target=None):
                     Player.HeadMessage(colors["success"], "[enemy poisoned]")
                     break
                 elif Journal.Search("The poison seems to have no effect."):
-                    Player.HeadMessage(colors["notice"], "[enemy immune]")
+                    Journal.Clear()
+                    Player.HeadMessage(colors["debug"], "[enemy immune]")
                     break
             # actual spell cast
+            if Target.HasTarget():
+                Target.Cancel()
             CastSpellOnTarget(enemy, spellName, 0)
             Timer.Create("cast_cd", spells[spellName].delayInMs + config.shardLatency)
             Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
@@ -287,8 +291,8 @@ def CastSpellRepeatably(spellName, target=None):
         Player.HeadMessage(colors["debug"], "[no target]")
 
     # resume defense script
-    if Misc.ScriptStatus("_defense.py") is False:
-        Misc.ScriptRun("_defense.py")
+    Misc.ScriptRun("_defense.py")
+    Misc.SetSharedValue("spell", "")
 
 
 # ---------------------------------------------------------------------
