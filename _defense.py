@@ -17,8 +17,7 @@ if Misc.ReadSharedValue("cast_cd") > 0:
     Timer.Create("cast_cd", Misc.ReadSharedValue("cast_cd"))
 
 while not Player.IsGhost:
-    Journal.Clear()
-    Misc.Pause(100)
+    Misc.Pause(50)
 
     bandages = FindBandage(Player.Backpack)
     if bandages is None:
@@ -62,6 +61,7 @@ while not Player.IsGhost:
                 "cast_cd", spells["Magic Arrow"].delayInMs + config.shardLatency
             )
             Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
+            Journal.Clear()
 
     # check hp
     hp_diff = Player.HitsMax - Player.Hits
@@ -70,13 +70,15 @@ while not Player.IsGhost:
         and Timer.Check("bandage_cd") is False
         and Timer.Check("cast_cd") is False
     ):
+        if Target.HasTarget():
+            Target.Cancel()
         Items.UseItem(bandages)
         Target.WaitForTarget(1000, False)
         Target.Self()
         Timer.Create("bandage_cd", 2300 + config.shardLatency)
 
     if (
-        0 < hp_diff >= 90
+        0 < hp_diff >= 80
         and Player.Mana >= spells["Greater Heal"].manaCost
         and Timer.Check("cast_cd") is False
     ):
@@ -102,21 +104,26 @@ while not Player.IsGhost:
         if mp_diff != 0:
             Meditation()
 
-    if Timer.Check("pot_cd") is False:
-        # mana pots
-        if 0 < mp_diff >= 40:
-            mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
-            if mana_pot:
-                Player.HeadMessage(colors["status"], "[gmana pot]")
-                Items.UseItem(mana_pot)
-                Timer.Create("pot_cd", 1000)
-        # heal pots
-        elif 0 < hp_diff >= 40:
-            heal_pot = FindItem(potions["greater heal potion"].itemID, Player.Backpack)
-            if heal_pot:
-                Player.HeadMessage(colors["status"], "[gheal pot]")
-                Items.UseItem(heal_pot)
-                Timer.Create("pot_cd", 1000)
+    if Player.WarMode is True:
+        if Timer.Check("pot_cd") is False:
+            # heal pots
+            if 0 < hp_diff >= 80:
+                heal_pot = FindItem(
+                    potions["greater heal potion"].itemID, Player.Backpack
+                )
+                if heal_pot:
+                    Player.HeadMessage(colors["status"], "[gheal pot]")
+                    Items.UseItem(heal_pot)
+                    Timer.Create("pot_cd", 1000)
+            # mana pots
+            elif 0 < mp_diff >= 40:
+                mana_pot = FindItem(
+                    potions["greater mana potion"].itemID, Player.Backpack
+                )
+                if mana_pot:
+                    Player.HeadMessage(colors["status"], "[gmana pot]")
+                    Items.UseItem(mana_pot)
+                    Timer.Create("pot_cd", 1000)
 
     # check for curse
     if Player.WarMode is True:

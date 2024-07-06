@@ -36,6 +36,10 @@ if not Misc.ScriptStatus("_defense.py"):
 while not Player.IsGhost:
     Misc.Pause(100)
 
+    if Journal.SearchByType("You are preoccupied with thoughts of a battle.", "System"):
+        Player.SetWarMode(True)
+        Player.SetWarMode(False)
+
     # check if our daemons are attacking friendlies
     if Journal.Search("*You see bob attacking you!*"):
         Journal.Clear()
@@ -70,6 +74,8 @@ while not Player.IsGhost:
                 ):
                     bandages = FindBandage(Player.Backpack)
                     if bandages:
+                        if Target.HasTarget():
+                            Target.Cancel()
                         Items.UseItem(bandages)
                         Target.WaitForTarget(1000, False)
                         Target.TargetExecute(enemies[i])
@@ -92,16 +98,16 @@ while not Player.IsGhost:
                     break
             # select nearest enemy if shared target not found
             enemy = Mobiles.Select(enemies, "Nearest")
-            break
 
     # if enemy is found, select and kill
     if enemy and Timer.Check("kill_cd") is False:
         Mobiles.Message(
             enemy,
-            colors["warning"],
-            ">> enemy",
+            colors["alert"],
+            ">> follower target <<",
         )
-        Target.ClearLastandQueue()
+        if Target.HasTarget():
+            Target.Cancel()
         Player.ChatSay(colors["debug"], "All Kill")
         Target.WaitForTarget(1000, False)
         Target.TargetExecute(enemy)
