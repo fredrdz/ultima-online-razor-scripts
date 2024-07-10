@@ -17,6 +17,7 @@ from System import Byte
 import Gumps, Items, Journal, Player, Misc, Mobiles, Statics, Target, Timer
 from glossary.colors import colors
 from glossary.spells import spellReagents
+from utils.common import Beep
 from utils.pathing import (
     IsPosition,
     PathCount,
@@ -28,10 +29,7 @@ from utils.item_actions.common import (
     unequip_hands,
     equip_left_hand,
     RecallNext,
-    RecallCurrent,
-    RecallPrevious,
     RecallBank,
-    use_runebook,
 )
 from utils.items import MoveItemsByCount
 from utils.status import Overweight
@@ -52,19 +50,18 @@ runaway = False
 secureContainer = None
 
 containerInBank = 0x40054709  # Serial of log bag in bank
-bankX = 3701
-bankY = 2519
+bankX = 2891
+bankY = 675
 
 
 # slot number in runebook, 1 of 16
-bank_rune = 1
-house_rune = 2
-vendor_rune = 3
+house_rune = 1
+bank_rune = 2
 
 # Define constants for the minimum and maximum values of tree_rune
 MIN_TREE_RUNE = 3
-MAX_TREE_RUNE = 3
-CURRENT_TREE_RUNE = 2
+MAX_TREE_RUNE = 11
+CURRENT_TREE_RUNE = 3
 # ********************
 
 # Parameters
@@ -108,10 +105,10 @@ Timer.Create("tracking_cd", 1)
 playerBag = Player.Backpack.Serial
 
 # check for runebook
-if not Misc.CheckSharedValue("young_runebook"):
+if not Misc.CheckSharedValue("lj_runebook"):
     Misc.ScriptRun("_startup.py")
-if Misc.CheckSharedValue("young_runebook"):
-    runebook_serial = Misc.ReadSharedValue("young_runebook")
+if Misc.CheckSharedValue("lj_runebook"):
+    runebook_serial = Misc.ReadSharedValue("lj_runebook")
 else:
     runebook_serial = Target.PromptTarget(">> target your runebook", colors["notice"])
 
@@ -245,6 +242,7 @@ def Restock(itemList, src, dst=Player.Backpack.Serial):
 
 
 def DepositAndRestock(runebook, rune, x=0, y=0):
+    # init
     Journal.Clear()
 
     # use bank if enabled
@@ -255,7 +253,7 @@ def DepositAndRestock(runebook, rune, x=0, y=0):
     containerItem = Items.FindBySerial(restockContainer)
     if not containerItem:
         Misc.SendMessage(">> restocking container not found", colors["fatal"])
-        sys.exit()
+        PlayerHideAndExit()
 
     # some chopping if logs in player bag
     while Items.BackpackCount(logID) > 0:
@@ -271,7 +269,7 @@ def DepositAndRestock(runebook, rune, x=0, y=0):
     # fatal error if container is full
     if Journal.SearchByType("That container cannot hold more weight.", "System"):
         Misc.SendMessage(">> container is full", colors["fatal"])
-        sys.exit()
+        PlayerHideAndExit()
 
     # restock
     recallSpell = spellReagents.get("Recall", [])
@@ -280,7 +278,13 @@ def DepositAndRestock(runebook, rune, x=0, y=0):
         restockItems.append((reg.itemID, 10))
     if Restock(restockItems, restockContainer) is False:
         Misc.SendMessage(">> failed to restock necessary items", colors["fatal"])
-        sys.exit()
+        PlayerHideAndExit()
+
+
+def PlayerHideAndExit():
+    Misc.ScriptStop("_watcher.py")
+    Player.UseSkill("Hiding", False)
+    sys.exit()
 
 
 # ---------------------------------------------------------------------
@@ -379,7 +383,6 @@ def CutLogs():
             Misc.Pause(300)
 
 
-# ---------------------------------------------------------------------
 def EquipAxe():
     if Player.CheckLayer("RightHand"):
         unequip_hands()
@@ -395,10 +398,9 @@ def EquipAxe():
         if not Player.CheckLayer("LeftHand"):
             Misc.SendMessage(">> no axes found", colors["fatal"])
             Misc.Beep()
-            sys.exit()
+            PlayerHideAndExit()
 
 
-# ---------------------------------------------------------------------
 def CutTree():
     if Target.HasTarget():
         Misc.SendMessage(">> detected target cursor, refreshing...", colors["warning"])
@@ -492,8 +494,8 @@ def IsEnemy():
 
     Mobiles.Message(
         nearestEnemy,
-        colors["warning"],
-        ">> enemy detected",
+        colors["alert"],
+        ">> enemy detected <<",
     )
 
     return True
@@ -519,15 +521,15 @@ def IsPlayer():
     humans = Mobiles.ApplyFilter(playerFilter)
     if len(humans) > 0:
         Timer.Create("tracking_cd", 1)
-        Misc.SendMessage(">> human nearby", colors["warning"])
-        Misc.Pause(1000)
+        Misc.SendMessage(">> human nearby <<", colors["alert"])
+        Misc.Pause(1)
 
     # tracking skill: long range player detection
     # 20 second cooldown unless overridden by short range detection
     if Timer.Check("tracking_cd") is False:
         Misc.SendMessage(">> checking for players...", colors["status"])
         Player.UseSkill("Tracking", False)
-        Timer.Create("tracking_cd", 20000)
+        Timer.Create("tracking_cd", 30000)
         Gumps.WaitForGump(2976808305, 2000)
         if Gumps.CurrentGump() == 2976808305:
             Gumps.SendAction(2976808305, 4)
@@ -553,46 +555,45 @@ invulFilter.Notorieties = List[Byte](bytes([7]))
 
 
 def SafteyNet():
+    # init
+    global CURRENT_TREE_RUNE
+
     # tries to auto solve afk gump or alerts if it fails
     if is_afk_gump():
-        Misc.Beep()
+        Beep()
         button_options = get_afk_gump_button_options()
         if button_options:
             if not solve_afk_gump(button_options):
                 Audio_say("solve AFK Gump")
                 Misc.FocusUOWindow()
-                sys.exit()
+                PlayerHideAndExit()
 
     # checks runaway flag; recalls away from enemies if detected
     if runaway is True:
         if IsEnemy() is True:
-            Misc.Beep()
-            Misc.Beep()
+            Beep(2)
             Audio_say("enemy detected")
-            RecallNext(runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE)
+            CURRENT_TREE_RUNE = RecallNext(
+                runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE
+            )
 
     # monitors mobiles and alerts if found
     if alert:
         invul = Mobiles.ApplyFilter(invulFilter)
         if IsPlayer() is True:
-            Misc.Beep()
-            Misc.Beep()
+            Beep(3)
             Audio_say("player is here")
-            Misc.FocusUOWindow()
-            rb = Misc.ReadSharedValue("young_runebook")
-            use_runebook(rb, 1)
-            Misc.Pause(2000)
-            Player.UseSkill("Hiding", False)
-            sys.exit()
+            CURRENT_TREE_RUNE = RecallNext(
+                runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE
+            )
         elif invul:
-            Misc.Beep()
-            Misc.Beep()
-            Misc.Beep()
+            Beep(4)
             Misc.FocusUOWindow()
             Audio_say("GM here")
             invulName = Mobiles.Select(invul, "Nearest")
             if invulName:
-                Misc.SendMessage(">> invul near:" + invul.Name, colors["warning"])
+                Misc.SendMessage(">> invul near:" + invul.Name, colors["alert"])
+            sys.exit()
 
     # close any gumps that may be opened to avoid issues
     if Gumps.HasGump():
@@ -603,6 +604,10 @@ def SafteyNet():
 # ---------------------------------------------------------------------
 # main process
 Misc.SendMessage(">> lumberjack starting up...", colors["notice"])
+DepositAndRestock(runebook_serial, bank_rune, bankX, bankY)
+CURRENT_TREE_RUNE = RecallNext(
+    runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE
+)
 
 while not Player.IsGhost:
     Misc.Pause(100)
@@ -611,12 +616,17 @@ while not Player.IsGhost:
     if not trees or len(trees) == 0:
         Misc.SendMessage(">> no trees found", colors["fatal"])
         Misc.SendMessage(">> going to next zone...", colors["notice"])
-        # RecallNext(runebook, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE)
+        CURRENT_TREE_RUNE = RecallNext(
+            runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE
+        )
         continue
 
     while len(trees) > 0:
         if Overweight(weightLimit):
-            DepositAndRestock(runebook_serial, house_rune, bankX, bankY)
+            DepositAndRestock(runebook_serial, bank_rune, bankX, bankY)
+            CURRENT_TREE_RUNE = RecallNext(
+                runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE
+            )
             break
         if MoveToTree():
             CutTree()

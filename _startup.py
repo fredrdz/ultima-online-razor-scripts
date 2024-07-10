@@ -10,6 +10,7 @@ if Player.Name == "Talik Starr":
     # items
     Misc.SetSharedValue("young_runebook", 0x4003B289)
     Misc.SetSharedValue("daily_runebook", 0x4012101D)
+    Misc.SetSharedValue("lj_runebook", 0x40121041)
     # misc
     Misc.SetSharedValue("spell", "")
     Misc.SetSharedValue("cast_cd", -1)
