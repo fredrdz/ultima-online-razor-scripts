@@ -11,6 +11,9 @@ import Items, Journal, Misc, Mobiles, Player, Spells, Sound, Target, Timer
 from glossary.colors import colors
 from glossary.spells import reagents, spells
 from glossary.items.scrolls import mageryScrolls
+from glossary.items.healing import FindBandage
+from glossary.items.potions import potions
+from utils.item_actions.common import equip_left_hand
 from utils.items import FindItem, FindNumberOfItems
 
 
@@ -136,7 +139,7 @@ def CastSpellOnSelf(spellName, delay=None):
     else:
         Spells.CastMagery(spell.name)
 
-    Target.WaitForTarget(1000, False)
+    Target.WaitForTarget(200, False)
     Target.Self()
 
     if delay is None or not isinstance(delay, int):
@@ -171,7 +174,7 @@ def CastSpellOnTarget(target, spellName, delay=None):
     else:
         Spells.CastMagery(spell.name)
 
-    Target.WaitForTarget(1000, False)
+    Target.WaitForTarget(200, False)
     Target.TargetExecute(target)
 
     if delay is None or not isinstance(delay, int):
@@ -197,7 +200,7 @@ castFilter.Notorieties = List[Byte](bytes([4, 5, 6]))
 # blue = 1, green = 2, grey = 3, grey(aggro) = 4, orange = 5, red = 6
 
 
-def CastSpellRepeatably(spellName="", enemy=None):
+def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
     """
     Casts a spell on the target multiple times
     """
@@ -224,30 +227,94 @@ def CastSpellRepeatably(spellName="", enemy=None):
             # select nearest enemy
             enemy = Mobiles.Select(enemies, "Nearest")
 
+    # init for loop
     Journal.Clear()
+    bandages = FindBandage(Player.Backpack)
+    shield = FindItem(0x1B74, Player.Backpack)
+    mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
+    cast_count = 0
 
     if enemy:
         # stop defense script
         Misc.ScriptStop("_defense.py")
-        # start attacking
-        # Player.HeadMessage(colors["debug"], f"[targeting {enemy.Name}]")
+        # show selected target
         Mobiles.Message(
             enemy,
             colors["alert"],
             ">> spell target <<",
         )
+        # start attacking
         while enemy:
             Misc.Pause(25)
             # check if player has changed requested spell
             spellName = Misc.ReadSharedValue("spell")
-            # check player status and defend if necessary
-            if 0 < (Player.HitsMax - Player.Hits) >= 65 or Player.Poisoned:
-                Player.HeadMessage(colors["alert"], "[defending]")
+            # equip shield (kite)
+            if shield:
+                equip_left_hand(shield, 1)
+            # check hp/mp
+            hp_diff = Player.HitsMax - Player.Hits
+            mp_diff = Player.ManaMax - Player.Mana
+            # check player status and act accordingly
+            if 0 < hp_diff >= 65:
+                Player.HeadMessage(colors["alert"], "[hp]")
+                break
+            elif Journal.SearchByType("You cannot move!", "System"):
+                break
+            elif (
+                Player.WarMode is True
+                and 0 < mp_diff >= 40
+                and Timer.Check("pot_cd") is False
+            ):
+                if mana_pot:
+                    Player.HeadMessage(colors["status"], "[gmana pot]")
+                    Items.UseItem(mana_pot)
+                    Timer.Create("pot_cd", 1000)
+                    continue
+            elif (
+                Player.Str < Misc.ReadSharedValue("str")
+                or Player.Dex < Misc.ReadSharedValue("dex")
+                or Player.Int < Misc.ReadSharedValue("int")
+            ):
+                break
+            elif (
+                (0 < hp_diff > 1 or Player.Poisoned)
+                and bandages
+                and Timer.Check("bandage_cd") is False
+                and Timer.Check("cast_cd") is False
+            ):
+                if Target.HasTarget():
+                    Target.Cancel()
+                Items.UseItem(bandages)
+                Target.WaitForTarget(200, False)
+                Target.Self()
+                Timer.Create("bandage_cd", 2350 + config.shardLatency)
+                continue
+            # spell checks
+            elif Timer.Check("cast_cd") is True:
+                Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
+                continue
+            elif cast_count == casts:
                 break
             elif Player.Mana < spells[spellName].manaCost:
                 Player.HeadMessage(colors["fail"], "[oom]")
                 break
-            # enemy and spell checks
+            elif CheckReagents(spellName) is False:
+                Player.HeadMessage(colors["fail"], "[no reagents]")
+                break
+            elif spellName == "Poison":
+                if enemy.Poisoned:
+                    Misc.SetSharedValue("spell", "Energy Bolt")
+                    spellName = "Energy Bolt"
+                    Misc.Pause(25)
+                    continue
+                elif Journal.Search("The poison seems to have no effect."):
+                    Journal.Clear()
+                    Player.HeadMessage(colors["debug"], "[enemy immune]")
+                    Misc.SetSharedValue("spell", "Energy Bolt")
+                    spellName = "Energy Bolt"
+                    Misc.Pause(25)
+                    continue
+            # enemy checks
             elif not enemy:
                 Player.HeadMessage(colors["debug"], "[enemy gone]")
                 break
@@ -261,32 +328,32 @@ def CastSpellRepeatably(spellName="", enemy=None):
                 Journal.Clear()
                 Player.HeadMessage(colors["debug"], "[enemy los]")
                 break
-            elif CheckReagents(spellName) is False:
-                Player.HeadMessage(colors["fail"], "[no reagents]")
-                break
-            elif Timer.Check("cast_cd") is True:
-                Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
-                continue
-            elif spellName == "Poison":
-                if enemy.Poisoned:
-                    Player.HeadMessage(colors["success"], "[enemy poisoned]")
-                    break
-                elif Journal.Search("The poison seems to have no effect."):
-                    Journal.Clear()
-                    Player.HeadMessage(colors["debug"], "[enemy immune]")
-                    break
             # actual spell cast
             if Target.HasTarget():
                 Target.Cancel()
             CastSpellOnTarget(enemy, spellName, 0)
             Timer.Create("cast_cd", spells[spellName].delayInMs + config.shardLatency)
             Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
-            # debug
+            # increment cast count
+            cast_count += 1
+            # spell combos
+            if spellName == "Curse":
+                Misc.SetSharedValue("spell", "Poison")
+                spellName = "Poison"
+                Misc.Pause(25)
+            elif spellName == "Paralyze":
+                Misc.SetSharedValue("spell", "Flamestrike")
+                spellName = "Flamestrike"
+                Misc.Pause(25)
+            elif spellName == "Magic Arrow":
+                Misc.SetSharedValue("spell", "Poison")
+                spellName = "Poison"
+                Misc.Pause(25)
+            ## debug ##
             # Sound.Log(True)
             # sounds = List[Int32]([249])  # meditation sound
             # exception checks
-            if spellName == "Curse":
-                break
+            ## end debug ##
     else:
         Player.HeadMessage(colors["debug"], "[no target]")
 

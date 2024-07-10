@@ -45,26 +45,34 @@ def equip_hands(left_item, right_item):
     return equip_left_hand(left_item), equip_right_hand(right_item)
 
 
-def equip_left_hand(left_item):
+def equip_left_hand(left_item, delay=config.dragDelayMilliseconds):
     """
     Equip the left hand with the provided item ID or SERIAL.
     If no valid ID or SERIAL is provided, nothing will happen.
     Drag Delay set via Config.
     """
-    if left_item:
-        Player.EquipItem(left_item)
-        Misc.Pause(config.dragDelayMilliseconds)
+    if not isinstance(delay, int):
+        delay = config.dragDelayMilliseconds
+
+    if not Player.CheckLayer("LeftHand"):
+        if left_item:
+            Player.EquipItem(left_item)
+            Misc.Pause(delay)
 
 
-def equip_right_hand(right_item):
+def equip_right_hand(right_item, delay=config.dragDelayMilliseconds):
     """
     Equip the right hand with the provided item ID or SERIAL.
     If no valid ID or SERIAL is provided, nothing will happen.
     Drag Delay set via Config.
     """
-    if right_item:
-        Player.EquipItem(right_item)
-        Misc.Pause(config.dragDelayMilliseconds)
+    if not isinstance(delay, int):
+        delay = config.dragDelayMilliseconds
+
+    if not Player.CheckLayer("RightHand"):
+        if right_item:
+            Player.EquipItem(right_item)
+            Misc.Pause(delay)
 
 
 # ---------------------------------------------------------------------
@@ -80,7 +88,7 @@ def use_runebook(runebook_serial, slot_number=1):
     Gumps.CloseGump(runebook.Id)
 
 
-def RecallNext(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
+def RecallNext(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16) -> int:
     # calculates the next tree_rune, wrapping around if it exceeds MAX_TREE_RUNE
     next_tree_rune = MIN_TREE_RUNE + (tree_rune + 1 - MIN_TREE_RUNE) % (
         MAX_TREE_RUNE - MIN_TREE_RUNE + 1
@@ -88,6 +96,7 @@ def RecallNext(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
     Misc.SendMessage(">> recalling to next zone", colors["notice"])
     use_runebook(runebook, next_tree_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)
+    return next_tree_rune
 
 
 def RecallCurrent(runebook, tree_rune=1):
@@ -96,7 +105,7 @@ def RecallCurrent(runebook, tree_rune=1):
     Misc.Pause(config.recallDelay + config.shardLatency)
 
 
-def RecallPrevious(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
+def RecallPrevious(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16) -> int:
     # calculates the previous tree_rune, wrapping around if it goes below MIN_TREE_RUNE
     previous_tree_rune = MAX_TREE_RUNE - (MAX_TREE_RUNE - tree_rune + 1) % (
         MAX_TREE_RUNE - MIN_TREE_RUNE + 1
@@ -104,6 +113,7 @@ def RecallPrevious(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16):
     Misc.SendMessage(">> recalling to previous zone", colors["notice"])
     use_runebook(runebook, previous_tree_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)
+    return previous_tree_rune
 
 
 def RecallBank(runebook, bank_rune=1):
