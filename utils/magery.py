@@ -11,7 +11,6 @@ import Items, Journal, Misc, Mobiles, Player, Spells, Sound, Target, Timer
 from glossary.colors import colors
 from glossary.spells import reagents, spells
 from glossary.items.scrolls import mageryScrolls
-from glossary.items.healing import FindBandage
 from glossary.items.potions import potions
 from utils.item_actions.common import equip_left_hand
 from utils.items import FindItem, FindNumberOfItems
@@ -129,9 +128,14 @@ def CastSpellOnSelf(spellName, delay=None):
         Misc.SendMessage(">> invalid spell name", colors["fatal"])
         Misc.Pause(5000)
         return
+
     # init
     spell = spells[spellName]
     scroll = FindScrollBySpell(spell.name)
+    ## debug ##
+    if spell.name == "Magic Reflection":
+        scroll = None
+    ## end debug ##
 
     if scroll:
         Player.HeadMessage(colors["debug"], f"[scroll: {spell.name}]")
@@ -164,6 +168,7 @@ def CastSpellOnTarget(target, spellName, delay=None):
         Misc.SendMessage(">> invalid spell name", colors["fatal"])
         Misc.Pause(5000)
         return
+
     # init
     spell = spells[spellName]
     scroll = FindScrollBySpell(spell.name)
@@ -229,7 +234,6 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
 
     # init for loop
     Journal.Clear()
-    bandages = FindBandage(Player.Backpack)
     shield = FindItem(0x1B74, Player.Backpack)
     mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
     cast_count = 0
@@ -246,16 +250,20 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
         # start attacking
         while enemy:
             Misc.Pause(25)
+
             # check if player has changed requested spell
             spellName = Misc.ReadSharedValue("spell")
+
             # equip shield (kite)
             if shield:
                 equip_left_hand(shield, 1)
+
             # check hp/mp
             hp_diff = Player.HitsMax - Player.Hits
             mp_diff = Player.ManaMax - Player.Mana
+
             # check player status and act accordingly
-            if 0 < hp_diff >= 65:
+            if 0 < hp_diff >= 70:
                 Player.HeadMessage(colors["alert"], "[hp]")
                 break
             elif Journal.SearchByType("You cannot move!", "System"):
@@ -276,44 +284,25 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
                 or Player.Int < Misc.ReadSharedValue("int")
             ):
                 break
-            elif (
-                (0 < hp_diff > 1 or Player.Poisoned)
-                and bandages
-                and Timer.Check("bandage_cd") is False
-                and Timer.Check("cast_cd") is False
-            ):
-                if Target.HasTarget():
-                    Target.Cancel()
-                Items.UseItem(bandages)
-                Target.WaitForTarget(200, False)
-                Target.Self()
-                Timer.Create("bandage_cd", 2350 + config.shardLatency)
-                continue
+            elif Player.Poisoned and Timer.Check("cast_cd") is False:
+                break
             # spell checks
+            elif spellName == "":
+                Player.HeadMessage(colors["debug"], "[no spell]")
+                break
             elif Timer.Check("cast_cd") is True:
                 Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
                 continue
             elif cast_count == casts:
                 break
-            elif Player.Mana < spells[spellName].manaCost:
+            elif Player.Mana <= spells[spellName].manaCost:
                 Player.HeadMessage(colors["fail"], "[oom]")
                 break
             elif CheckReagents(spellName) is False:
                 Player.HeadMessage(colors["fail"], "[no reagents]")
                 break
-            elif spellName == "Poison":
-                if enemy.Poisoned:
-                    Misc.SetSharedValue("spell", "Energy Bolt")
-                    spellName = "Energy Bolt"
-                    Misc.Pause(25)
-                    continue
-                elif Journal.Search("The poison seems to have no effect."):
-                    Journal.Clear()
-                    Player.HeadMessage(colors["debug"], "[enemy immune]")
-                    Misc.SetSharedValue("spell", "Energy Bolt")
-                    spellName = "Energy Bolt"
-                    Misc.Pause(25)
-                    continue
+            elif spellName == "Magic Reflection":
+                continue
             # enemy checks
             elif not enemy:
                 Player.HeadMessage(colors["debug"], "[enemy gone]")
@@ -341,13 +330,29 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
                 Misc.SetSharedValue("spell", "Poison")
                 spellName = "Poison"
                 Misc.Pause(25)
-            elif spellName == "Paralyze":
-                Misc.SetSharedValue("spell", "Flamestrike")
-                spellName = "Flamestrike"
-                Misc.Pause(25)
             elif spellName == "Magic Arrow":
+                Misc.SetSharedValue("spell", "Paralyze")
+                spellName = "Paralyze"
+                Misc.Pause(25)
+            elif spellName == "Paralyze":
+                Misc.SetSharedValue("spell", "Weaken")
+                spellName = "Weaken"
+                Misc.Pause(25)
+            elif spellName == "Weaken":
+                Misc.SetSharedValue("spell", "Feeblemind")
+                spellName = "Feeblemind"
+                Misc.Pause(25)
+            elif spellName == "Feeblemind":
+                Misc.SetSharedValue("spell", "Clumsy")
+                spellName = "Clumsy"
+                Misc.Pause(25)
+            elif spellName == "Clumsy":
                 Misc.SetSharedValue("spell", "Poison")
                 spellName = "Poison"
+                Misc.Pause(25)
+            elif spellName == "Poison":
+                Misc.SetSharedValue("spell", "Flamestrike")
+                spellName = "Flamestrike"
                 Misc.Pause(25)
             ## debug ##
             # Sound.Log(True)
@@ -360,27 +365,4 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
     # resume defense script
     Misc.ScriptRun("_defense.py")
     Misc.SetSharedValue("spell", "")
-
-
-# ---------------------------------------------------------------------
-# Script helpers
-def StopAllCastsExcept(castScript):
-    """
-    Stops all spell casting scripts.
-    """
-    scripts = [
-        "cast_Curse.py",
-        "cast_Poison.py",
-        "cast_Lightning.py",
-        "cast_Harm.py",
-        "cast_MagicArrow.py",
-        "cast_Fireball.py",
-        "cast_Explosion.py",
-        "cast_EnergyBolt.py",
-        "cast_Flamestrike.py",
-    ]
-
-    for script in scripts:
-        if Misc.ScriptStatus(script) is True:
-            if script != castScript:
-                Misc.ScriptStop(script)
+    return Timer.Remaining("cast_cd")

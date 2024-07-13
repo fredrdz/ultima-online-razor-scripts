@@ -4,7 +4,7 @@ import sys
 # Custom Packages
 import Misc, Mobiles, Player, Target
 from glossary.colors import colors
-from utils.magery import CastSpellOnTarget
+from utils.magery import CastSpellOnSelf, CastSpellOnTarget
 
 """
 Area to test functions.
@@ -26,4 +26,7 @@ if target:
         ">> debug target",
     )
     # test moblie targeted funcs here
-    CastSpellOnTarget(target, "Flamestrike", 0)
+    spell = "Cure"
+    for _ in range(5):
+        # CastSpellOnTarget(target, spell)
+        CastSpellOnSelf(spell, 800 + 150)

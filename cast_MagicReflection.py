@@ -1,9 +1,13 @@
-import Misc, Player
+import Misc
 from utils.magery import CastSpellOnSelf
 
+# init
 spellName = "Magic Reflection"
-Misc.SetSharedValue("spell", "")
+Misc.SetSharedValue("spell", spellName)
 Misc.SetSharedValue("cast_cd", -1)
-Player.SetWarMode(False)
-Player.SetWarMode(True)
+
+# reflect spell
 CastSpellOnSelf(spellName)
+
+# reset shared spell
+Misc.SetSharedValue("spell", "")

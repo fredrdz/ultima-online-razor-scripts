@@ -1,7 +1,7 @@
 # custom RE packages
 import config
 import Items, Journal, Misc, Mobiles, Player, Target, Timer
-from utils.item_actions.common import equip_left_hand
+from utils.item_actions.common import equip_left_hand, unequip_hands
 from utils.items import FindItem
 from glossary.items.healing import FindBandage
 from glossary.items.potions import potions
@@ -74,7 +74,7 @@ while not Player.IsGhost:
     if Player.WarMode is True:
         if Timer.Check("pot_cd") is False:
             # mana pots
-            if 0 < mp_diff >= 40:
+            if 0 < mp_diff >= 55:
                 mana_pot = FindItem(
                     potions["greater mana potion"].itemID, Player.Backpack
                 )
@@ -88,13 +88,20 @@ while not Player.IsGhost:
     if shared_target > 0:
         enemy = Mobiles.FindBySerial(shared_target)
 
-    # equip hand (spear)
-    if Timer.Check("cast_cd") is False:
-        if weapon:
+    # equip hand (spear) if we aren't casting anything
+    if Timer.Check("cast_cd") is False and weapon:
+        if Player.CheckLayer("RightHand"):
+            unequip_hands()
+        elif Player.CheckLayer("LeftHand"):
+            if Player.GetItemOnLayer("LeftHand").ItemID != weapon.ItemID:
+                unequip_hands()
+
+        if not Player.CheckLayer("LeftHand"):
             equip_left_hand(weapon, 1)
+
         if enemy and Timer.Check("attack_cd") is False:
             Player.Attack(enemy)
-            Timer.Create("attack_cd", 10000)
+            Timer.Create("attack_cd", 20000)
 
 # resume defense script
 Misc.ScriptRun("_defense.py")

@@ -38,6 +38,7 @@ while not Player.IsGhost:
 
     # toggle war mode off if trying to do something peaceful
     if Journal.SearchByType("You are preoccupied with thoughts of a battle.", "System"):
+        Journal.Clear()
         Player.SetWarMode(True)
         Player.SetWarMode(False)
 
@@ -84,6 +85,7 @@ while not Player.IsGhost:
     for i in range(len(enemies) - 1, -1, -1):
         e = enemies[i]
         if e.Name == "bob":
+            # delete our daemon from list to avoid selection
             del enemies[i]
             # if enemies[i].Hits < enemies[i].HitsMax:
             #     if (
@@ -102,6 +104,8 @@ while not Player.IsGhost:
             # if our daemon, rename, set to guard
             Misc.PetRename(e, "bob")
             Player.ChatSay(colors["debug"], "All Guard Me")
+            # delete our daemon from list to avoid selection
+            del enemies[i]
 
     # select nearest enemy
     enemy = Mobiles.Select(enemies, "Nearest")
@@ -126,6 +130,3 @@ while not Player.IsGhost:
         Target.WaitForTarget(200, False)
         Target.TargetExecute(enemy)
         Timer.Create("kill_cd", 5000)
-
-    # if no enemy found, clear target
-    enemy = None
