@@ -40,10 +40,10 @@ from utils.gumps import is_afk_gump, get_afk_gump_button_options, solve_afk_gump
 # Trees where there is no longer enough wood to be harvested will not be revisited until this much time has passed
 treeCooldown = 1200000  # 1,200,000 ms is 20 minutes
 
-# Want this script to alert you for humaniods?
+# Want this script to alert you for GM or prompts?
 alert = True
 # Want this script to run away from bad guys?
-runaway = False
+runaway = True
 
 # setting a secure container will disable bank restocking
 # will restock from here instead
@@ -101,6 +101,7 @@ class Tree:
 
 # init
 trees = []
+human_ignore_list = []
 Timer.Create("tracking_cd", 1)
 playerBag = Player.Backpack.Serial
 
@@ -356,8 +357,8 @@ def MoveToTree():
     while IsPosition(chopX, chopY) is False and Timer.Check("pathing") is True:
         Misc.Pause(random.randint(50, 150))
         if Timer.Check("safteyNet") is False:
-            SafteyNet()
-            Timer.Create("safteyNet", 2000)
+            SafetyNet()
+            Timer.Create("safteyNet", 1000)
 
     # if pathfinding script is still running after t/o, stop it
     if Timer.Check("pathing") is False:
@@ -435,11 +436,12 @@ def CutTree():
     ):
         Misc.Pause(100)
 
-    # if here, we are not chopping, so we do checks
+    # safteyNet runs every second in between chops
     if Timer.Check("safteyNet") is False:
-        SafteyNet()
-        Timer.Create("safteyNet", 2000)
+        SafetyNet()
+        Timer.Create("safteyNet", 1000)
 
+    # if here, we are not chopping, so we do checks
     if Journal.SearchByType("There's not enough wood here to harvest.", "System"):
         Misc.SendMessage(">> no wood here", colors["status"])
         Misc.SendMessage(">> tree change", colors["status"])
@@ -515,34 +517,39 @@ playerFilter.Paralized = -1
 playerFilter.Notorieties = List[Byte](bytes([1, 4, 5, 6]))
 
 
-def IsPlayer():
-    # mobile filter: short range player detection
-    # safteyNet runs every 2 seconds
-    humans = Mobiles.ApplyFilter(playerFilter)
-    if len(humans) > 0:
-        Timer.Create("tracking_cd", 1)
-        Misc.SendMessage(">> human nearby <<", colors["alert"])
-        Misc.Pause(1)
+def IsPlayer() -> bool:
+    # init
+    global human_ignore_list
 
-    # tracking skill: long range player detection
-    # 20 second cooldown unless overridden by short range detection
-    if Timer.Check("tracking_cd") is False:
-        Misc.SendMessage(">> checking for players...", colors["status"])
-        Player.UseSkill("Tracking", False)
-        Timer.Create("tracking_cd", 30000)
-        Gumps.WaitForGump(2976808305, 2000)
-        if Gumps.CurrentGump() == 2976808305:
-            Gumps.SendAction(2976808305, 4)
-            Gumps.WaitForGump(993494147, 2000)
-            if Gumps.CurrentGump() == 993494147:
-                Misc.SendMessage(">> found players", colors["alert"])
-                player_list = Gumps.LastGumpGetLineList()
-                if player_list:
-                    player_list = [str(line) for line in player_list]
-                    for player in player_list:
-                        Misc.SendMessage(f"-- {player}", colors["alert"])
-                    Gumps.CloseGump(993494147)
-                    return True
+    # run mobile filter: short range human detection
+    humans = Mobiles.ApplyFilter(playerFilter)
+
+    # add human NPCs to ignore list or return true if player
+    if len(humans) > 0:
+        for i in range(len(humans) - 1, -1, -1):
+            h = humans[i]
+            if h.Serial not in human_ignore_list:
+                Misc.SendMessage(">> human nearby <<", colors["alert"])
+                # tracking skill used to confirm if player
+                Misc.SendMessage(">> checking if player...", colors["alert"])
+                Player.UseSkill("Tracking", False)
+                Gumps.WaitForGump(2976808305, 2000)
+                # button 4 for checking for players
+                if Gumps.CurrentGump() == 2976808305:
+                    Gumps.SendAction(2976808305, 4)
+                    Gumps.WaitForGump(993494147, 2000)
+                    # player gump shows if any found
+                    if Gumps.CurrentGump() == 993494147:
+                        Misc.SendMessage(">> found players", colors["alert"])
+                        player_list = Gumps.LastGumpGetLineList()
+                        if player_list:
+                            player_list = [str(line) for line in player_list]
+                            for player in player_list:
+                                Misc.SendMessage(f"-- {player}", colors["alert"])
+                            Gumps.CloseGump(993494147)
+                            return True
+                    else:
+                        human_ignore_list.append(h.Serial)
     return False
 
 
@@ -554,19 +561,9 @@ invulFilter.Friend = False
 invulFilter.Notorieties = List[Byte](bytes([7]))
 
 
-def SafteyNet():
+def SafetyNet():
     # init
     global CURRENT_TREE_RUNE
-
-    # tries to auto solve afk gump or alerts if it fails
-    if is_afk_gump():
-        Beep()
-        button_options = get_afk_gump_button_options()
-        if button_options:
-            if not solve_afk_gump(button_options):
-                Audio_say("solve AFK Gump")
-                Misc.FocusUOWindow()
-                PlayerHideAndExit()
 
     # checks runaway flag; recalls away from enemies if detected
     if runaway is True:
@@ -576,17 +573,26 @@ def SafteyNet():
             CURRENT_TREE_RUNE = RecallNext(
                 runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE
             )
-
-    # monitors mobiles and alerts if found
-    if alert:
-        invul = Mobiles.ApplyFilter(invulFilter)
         if IsPlayer() is True:
             Beep(3)
             Audio_say("player is here")
             CURRENT_TREE_RUNE = RecallNext(
                 runebook_serial, CURRENT_TREE_RUNE, MIN_TREE_RUNE, MAX_TREE_RUNE
             )
-        elif invul:
+
+    # monitors mobiles and alerts if found
+    if alert:
+        invul = Mobiles.ApplyFilter(invulFilter)
+        # tries to auto solve afk gump or alerts if it fails
+        if is_afk_gump():
+            Beep()
+            button_options = get_afk_gump_button_options()
+            if button_options:
+                if not solve_afk_gump(button_options):
+                    Audio_say("solve AFK Gump")
+                    Misc.FocusUOWindow()
+                    PlayerHideAndExit()
+        if invul:
             Beep(4)
             Misc.FocusUOWindow()
             Audio_say("GM here")
