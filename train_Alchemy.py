@@ -1,18 +1,19 @@
 """
-SCRIPT: train_Cartography.py
+SCRIPT: train_Alchemy.py
 Author: Talik Starr
 IN:RISEN
-Skill: Cartography
+Skill: Alchemy
 """
 
 # custom RE packages
 import Items, Player, Misc, Target
-from glossary.crafting.cartography import (
-    cartName,
-    cartGump,
-    cartTools,
-    cartCraftables,
+from glossary.crafting.alchemy import (
+    alchName,
+    alchGump,
+    alchTools,
+    alchCraftables,
 )
+from glossary.items.potions import potions
 from glossary.colors import colors
 from utils.crafting import TrainCraftSkill
 from utils.items import EnableSellingAgent
@@ -24,7 +25,7 @@ from utils.items import EnableSellingAgent
 # will restock from here instead; useful for crafting in house
 secureContainer = 0x40125C18
 # will toss successful crafts into trash barrel
-throwAwayItems = True
+throwAwayItems = False
 # will vendor sell after full backpack or if overweight
 sellItems = False
 
@@ -49,7 +50,7 @@ containerInBank = 0x40054709
 # a list of tuples containing itemID and count
 depositItems = [
     (0x0EED, -1),  # gold
-    (0x0EF3, -1),  # blank scrolls
+    (potions["lesser poison potion"].itemID, -1),
 ]
 
 # ---------------------------------------------------------------------
@@ -63,8 +64,7 @@ if Misc.CheckSharedValue("young_runebook"):
     runebook_serial = Misc.ReadSharedValue("young_runebook")
 else:
     runebook_serial = Target.PromptTarget(
-        ">> Select the runebook with the bank, house, and vendor rune:",
-        colors["notice"],
+        ">> target the runebook with th bank, house, and vendor rune", colors["notice"]
     )
 
 # check what type of restock container we're using;
@@ -114,21 +114,18 @@ craftConfig = {
     "vendorName": vendorName,
     "vendorPosition": (sellX, sellY),
     # skill settings
-    "skillName": cartName,
-    "skillGump": cartGump,
-    "skillTools": cartTools,
-    "skillCraftables": cartCraftables,
+    "skillName": alchName,
+    "skillGump": alchGump,
+    "skillTools": alchTools,
+    "skillCraftables": alchCraftables,
     # skill path to use: "skill" or "profit"
     "usePath": "skill",
     # a dictionary of skill paths and their values
     # define what item names to craft and up to which maximum skill value
     "paths": {
-        "skill": {"world map": 100.0},
+        "skill": {"lesser poison": 100.0},
         "profit": {
-            "local map": 25.0,
-            "city map": 50.0,
-            "sea map": 75.0,
-            "world map": 100.0,
+            "placeholder": 100.0,
         },
     },
 }
@@ -136,11 +133,11 @@ craftConfig = {
 
 # ---------------------------------------------------------------------
 # script functions
-def TrainCartographySkill(
+def TrainAlchemySkill(
     craftConfig={},
 ):
     """
-    Trains Cartography skill to its skill cap
+    Trains Alchemy skill to its skill cap
     """
     TrainCraftSkill(craftConfig)
     return
@@ -149,5 +146,5 @@ def TrainCartographySkill(
 # ---------------------------------------------------------------------
 # main script process
 
-EnableSellingAgent("cartography")
-TrainCartographySkill(craftConfig)
+EnableSellingAgent("alchemy")
+TrainAlchemySkill(craftConfig)

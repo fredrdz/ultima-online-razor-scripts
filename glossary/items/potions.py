@@ -18,4 +18,6 @@ potions = {
     # mana
     "mana potion": myItem("mana potion", 0x0F09, 0x0388, "potion", 1),
     "greater mana potion": myItem("greater mana potion", 0x0F0D, 0x0387, "potion", 1),
+    # poison
+    "lesser poison potion": myItem("lesser poison potion", 0x0F0A, 0x0000, "potion", 1),
 }

@@ -21,14 +21,17 @@ if Player.Name == "Talik Starr":
         BuyAgent.Enable()
 
 
-# wait 5s to let client load in
-Misc.Pause(5000)
+# wait 3s to let client load in
+Misc.Pause(3000)
 
 # load containers/bags into memory
 # pouchs are trapped, so we don't include them
 for backpack_item in Player.Backpack.Contains:
     if backpack_item.IsContainer and backpack_item.ItemID != containers["pouch"].itemID:
         Items.UseItem(backpack_item)
+
+# wait 3s to let containers load
+Misc.Pause(3000)
 
 # autorun watcher service
 Misc.ScriptRun("_watcher.py")

@@ -66,7 +66,14 @@ miscellaneous = {
     ),
     "feather": myItem(
         name="feather",
-        itemID=0x0000,
+        itemID=0x1BD1,
+        color=0x0000,
+        category="generic",
+        weight=1,
+    ),
+    "empty bottle": myItem(
+        name="empty bottle",
+        itemID=0x0F0E,
         color=0x0000,
         category="generic",
         weight=1,

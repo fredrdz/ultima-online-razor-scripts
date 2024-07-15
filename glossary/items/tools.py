@@ -175,4 +175,8 @@ tools = {
     "arrow fletching": myItem(
         name="arrow fletching", itemID=0x1022, color=0x0000, category="tool", weight=2
     ),
+    # Alchemy
+    "mortar and pestle": myItem(
+        name="mortar and pestle", itemID=0x0E9B, color=0x0000, category="tool", weight=2
+    ),
 }

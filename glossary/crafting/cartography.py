@@ -15,7 +15,7 @@ cartCraftables = {
         RetainsMark=False,
         RetainsColor=False,
         MinSkill=10.0,
-        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        ResourcesNeeded={miscellaneous["blank scroll"]: 1},
         GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 2)),
     ),
     "city map": Craftable(
@@ -24,7 +24,7 @@ cartCraftables = {
         RetainsMark=False,
         RetainsColor=False,
         MinSkill=25.0,
-        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        ResourcesNeeded={miscellaneous["blank scroll"]: 1},
         GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 9)),
     ),
     "sea map": Craftable(
@@ -33,7 +33,7 @@ cartCraftables = {
         RetainsMark=False,
         RetainsColor=False,
         MinSkill=35.0,
-        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        ResourcesNeeded={miscellaneous["blank scroll"]: 1},
         GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 16)),
     ),
     "world map": Craftable(
@@ -42,7 +42,7 @@ cartCraftables = {
         RetainsMark=False,
         RetainsColor=False,
         MinSkill=39.5,
-        ResourcesNeeded={miscellaneous["blank scrolls"]: 1},
+        ResourcesNeeded={miscellaneous["blank scroll"]: 1},
         GumpPath=(GumpSelection(cartGump, 1), GumpSelection(cartGump, 23)),
     ),
 }

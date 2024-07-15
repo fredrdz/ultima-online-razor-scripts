@@ -209,6 +209,9 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
     """
     Casts a spell on the target multiple times
     """
+    # init
+    Player.HeadMessage(colors["status"], "[offensive]")
+
     # checks for shared spell casting cooldown to prevent fizzling
     cast_cd = Misc.ReadSharedValue("cast_cd")
     if cast_cd > 0:

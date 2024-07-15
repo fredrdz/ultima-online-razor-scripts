@@ -3,8 +3,8 @@ import Player, Misc
 # List of scripts to watch and autorun
 scripts_to_watch = [
     "_defense.py",
-    "skill_Lumberjacking.py",
-    # "train_Carpentry.py",
+    # "skill_Lumberjacking.py",
+    "train_Alchemy.py",
 ]
 
 # watch/autorun scripts if stopped
