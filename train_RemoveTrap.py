@@ -99,22 +99,31 @@ def TrainRemoveTrap(trapTarget, restockContainer):
         if poison_bottle_count[poisonBottleID] <= 0:
             MoveItemsByCount(restockList, restock_container.Serial, backpack.Serial)
 
-        # apply poison trap
+        # trapping init
         tinker_gump = 949095101
+
+        if Target.HasTarget():
+            Target.Cancel()
+
+        if Gumps.CurrentGump() == tinker_gump:
+            Gumps.CloseGump(tinker_gump)
+
+        # apply poison trap
         Items.UseItem(tinker_tool)
         Gumps.WaitForGump(tinker_gump, 10000)
         Gumps.SendAction(tinker_gump, 50)  # click Traps
         Gumps.WaitForGump(tinker_gump, 10000)
         Gumps.SendAction(tinker_gump, 9)  # click Poison Trap
         # restart loop if we encounter issues
-        Target.WaitForTarget(5000 + shardLatency, False)
-        if not Journal.WaitJournal("What would you like to set a trap on?", 5000):
+        Target.WaitForTarget(7000 + shardLatency, False)
+        if not Journal.WaitJournal("What would you like to set a trap on?", 7000):
             Journal.Clear()
             Gumps.CloseGump(tinker_gump)
             continue
         # no issues so trap container
         Target.TargetExecute(trapTarget)  # select container
         Gumps.WaitForGump(tinker_gump, 10000)
+        # check trap status
         gump_text_options = Gumps.LastGumpGetLineList()
         if gump_text_options:
             gump_text_options = [str(line) for line in gump_text_options]
@@ -140,7 +149,11 @@ def TrainRemoveTrap(trapTarget, restockContainer):
         if Journal.Search("What would you like to set a trap on?"):
             Journal.Clear()
             Target.TargetExecute(trapTarget)
+        elif Journal.Search("That doesn't appear to be trapped."):
+            Journal.Clear()
+            continue
 
+        # remove trap
         while not Journal.Search("You successfully render the trap harmless."):
             if Journal.Search("That doesn't appear to be trapped."):
                 Journal.Clear()
