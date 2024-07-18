@@ -226,12 +226,25 @@ class SpellInfo:
     name = ""
     circle = 0
     reagents = []
-    manaCost = 0.0
+    manaCost = 0
     minSkill = 0
     delayInS = 0.0
     delayInMs = 0
+    scrollMana = 0
+    scrollDelay = 0
 
-    def __init__(self, name, circle, reagents, manaCost, minSkill, delayInS, delayInMs):
+    def __init__(
+        self,
+        name,
+        circle,
+        reagents,
+        manaCost,
+        minSkill,
+        delayInS,
+        delayInMs,
+        scrollMana,
+        scrollDelay,
+    ):
         self.name = name
         self.circle = circle
         self.reagents = reagents
@@ -239,157 +252,233 @@ class SpellInfo:
         self.minSkill = minSkill
         self.delayInS = delayInS
         self.delayInMs = delayInMs
+        self.scrollMana = scrollMana
+        self.scrollDelay = scrollDelay
 
 
 spells = {
     # First Circle
-    "Clumsy": SpellInfo("Clumsy", 1, spellReagents["Clumsy"], 4, 0.0, 0.6, 600),
+    "Clumsy": SpellInfo("Clumsy", 1, spellReagents["Clumsy"], 4, 0.0, 0.6, 600, 4, 600),
     "Create Food": SpellInfo(
-        "Create Food", 1, spellReagents["Create Food"], 4, 0.0, 0.5, 500
+        "Create Food", 1, spellReagents["Create Food"], 4, 0.0, 0.5, 500, 4, 500
     ),
     "Feeblemind": SpellInfo(
-        "Feeblemind", 1, spellReagents["Feeblemind"], 4, 0.0, 0.6, 600
+        "Feeblemind", 1, spellReagents["Feeblemind"], 4, 0.0, 0.6, 600, 4, 600
     ),
-    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 0.6, 575),
+    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 5.75, 575, 4, 575),
     "Magic Arrow": SpellInfo(
-        "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 1, 1025
+        "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 1, 1025, 4, 1025
     ),
     "Night Sight": SpellInfo(
-        "Night Sight", 1, spellReagents["Night Sight"], 4, 0.0, 0.5, 500
+        "Night Sight", 1, spellReagents["Night Sight"], 4, 0.0, 0.5, 500, 4, 500
     ),
     "Reactive Armor": SpellInfo(
-        "Reactive Armor", 1, spellReagents["Reactive Armor"], 4, 0.0, 1, 1000
+        "Reactive Armor", 1, spellReagents["Reactive Armor"], 4, 0.0, 1, 1000, 4, 1000
     ),
-    "Weaken": SpellInfo("Weaken", 1, spellReagents["Weaken"], 4, 0.0, 0.6, 600),
+    "Weaken": SpellInfo("Weaken", 1, spellReagents["Weaken"], 4, 0.0, 0.6, 600, 4, 600),
     # Second Circle
-    "Agility": SpellInfo("Agility", 2, spellReagents["Agility"], 6, 0.0, 0.75, 750),
-    "Cunning": SpellInfo("Cunning", 2, spellReagents["Cunning"], 6, 0.0, 0.75, 750),
-    "Cure": SpellInfo("Cure", 2, spellReagents["Cure"], 6, 0.0, 1, 800),
-    "Harm": SpellInfo("Harm", 2, spellReagents["Harm"], 6, 0.0, 2, 2000),
+    "Agility": SpellInfo(
+        "Agility", 2, spellReagents["Agility"], 6, 0.0, 0.75, 750, 6, 750
+    ),
+    "Cunning": SpellInfo(
+        "Cunning", 2, spellReagents["Cunning"], 6, 0.0, 0.75, 750, 6, 750
+    ),
+    "Cure": SpellInfo("Cure", 2, spellReagents["Cure"], 6, 0.0, 1, 800, 6, 800),
+    "Harm": SpellInfo("Harm", 2, spellReagents["Harm"], 6, 0.0, 2, 2000, 6, 2000),
     "Magic Trap": SpellInfo(
-        "Magic Trap", 2, spellReagents["Magic Trap"], 6, 0.0, 0.75, 750
+        "Magic Trap", 2, spellReagents["Magic Trap"], 6, 0.0, 0.75, 750, 6, 750
     ),
     "Magic Untrap": SpellInfo(
-        "Magic Untrap", 2, spellReagents["Magic Untrap"], 6, 0.0, 0.75, 750
+        "Magic Untrap", 2, spellReagents["Magic Untrap"], 6, 0.0, 0.75, 750, 6, 750
     ),
     "Protection": SpellInfo(
-        "Protection", 2, spellReagents["Protection"], 6, 0.0, 1, 1000
+        "Protection", 2, spellReagents["Protection"], 6, 0.0, 1, 1000, 6, 1000
     ),
-    "Strength": SpellInfo("Strength", 2, spellReagents["Strength"], 6, 0.0, 0.75, 750),
+    "Strength": SpellInfo(
+        "Strength", 2, spellReagents["Strength"], 6, 0.0, 0.75, 750, 6, 750
+    ),
     # Third Circle
-    "Bless": SpellInfo("Bless", 3, spellReagents["Bless"], 9, 9.0, 2, 2000),
-    "Fireball": SpellInfo("Fireball", 3, spellReagents["Fireball"], 9, 9.0, 2.35, 2325),
+    "Bless": SpellInfo("Bless", 3, spellReagents["Bless"], 9, 9.0, 2, 2000, 9, 2000),
+    "Fireball": SpellInfo(
+        "Fireball", 3, spellReagents["Fireball"], 9, 9.0, 2.35, 2325, 9, 2325
+    ),
     "Magic Lock": SpellInfo(
-        "Magic Lock", 3, spellReagents["Magic Lock"], 9, 9.0, 1.0, 1000
+        "Magic Lock", 3, spellReagents["Magic Lock"], 9, 9.0, 1.0, 1000, 9, 1000
     ),
-    "Poison": SpellInfo("Poison", 3, spellReagents["Poison"], 9, 9.0, 0.9, 900),
+    "Poison": SpellInfo("Poison", 3, spellReagents["Poison"], 9, 9.0, 0.9, 900, 9, 900),
     "Telekinesis": SpellInfo(
-        "Telekinesis", 3, spellReagents["Telekinesis"], 9, 9.0, 1.0, 1000
+        "Telekinesis", 3, spellReagents["Telekinesis"], 9, 9.0, 1.0, 1000, 9, 1000
     ),
-    "Teleport": SpellInfo("Teleport", 3, spellReagents["Teleport"], 9, 9.0, 1.0, 1000),
-    "Unlock": SpellInfo("Unlock", 3, spellReagents["Unlock"], 9, 9.0, 1.0, 1000),
+    "Teleport": SpellInfo(
+        "Teleport", 3, spellReagents["Teleport"], 9, 9.0, 1.0, 1000, 9, 1000
+    ),
+    "Unlock": SpellInfo(
+        "Unlock", 3, spellReagents["Unlock"], 9, 9.0, 1.0, 1000, 9, 1000
+    ),
     "Wall of Stone": SpellInfo(
-        "Wall of Stone", 3, spellReagents["Wall of Stone"], 9, 9.0, 1.0, 1000
+        "Wall of Stone", 3, spellReagents["Wall of Stone"], 9, 9.0, 1.0, 1000, 9, 1000
     ),
     # Fourth Circle
     "Arch Cure": SpellInfo(
-        "Arch Cure", 4, spellReagents["Arch Cure"], 11, 24.0, 1.25, 1250
+        "Arch Cure", 4, spellReagents["Arch Cure"], 11, 24.0, 1.25, 1250, 11, 1250
     ),
     "Arch Protection": SpellInfo(
-        "Arch Protection", 4, spellReagents["Arch Protection"], 11, 24.0, 1.25, 1250
+        "Arch Protection",
+        4,
+        spellReagents["Arch Protection"],
+        11,
+        24.0,
+        1.25,
+        1250,
+        11,
+        1250,
     ),
-    "Curse": SpellInfo("Curse", 4, spellReagents["Curse"], 11, 24.0, 2, 2000),
+    "Curse": SpellInfo("Curse", 4, spellReagents["Curse"], 11, 24.0, 2, 2000, 11, 2000),
     "Fire Field": SpellInfo(
-        "Fire Field", 4, spellReagents["Fire Field"], 11, 24.0, 1.25, 2000
+        "Fire Field", 4, spellReagents["Fire Field"], 11, 24.0, 1.25, 2000, 11, 2000
     ),
     "Greater Heal": SpellInfo(
-        "Greater Heal", 4, spellReagents["Greater Heal"], 23, 24.0, 2, 825
+        "Greater Heal", 4, spellReagents["Greater Heal"], 11, 24.0, 2, 2000, 23, 825
     ),
     "Lightning": SpellInfo(
-        "Lightning", 4, spellReagents["Lightning"], 10, 24.0, 2.35, 1350
+        "Lightning", 4, spellReagents["Lightning"], 11, 24, 2.35, 2350, 23, 1350
     ),
     "Mana Drain": SpellInfo(
-        "Mana Drain", 4, spellReagents["Mana Drain"], 11, 24.0, 1.25, 1250
+        "Mana Drain", 4, spellReagents["Mana Drain"], 11, 24.0, 1.25, 1250, 11, 1250
     ),
-    "Recall": SpellInfo("Recall", 4, spellReagents["Recall"], 11, 24.0, 1.25, 1250),
+    "Recall": SpellInfo(
+        "Recall", 4, spellReagents["Recall"], 11, 24.0, 1.25, 1250, 11, 1250
+    ),
     # Fifth Circle
     "Blade Spirits": SpellInfo(
-        "Blade Spirits", 5, spellReagents["Blade Spirits"], 14, 38.0, 6.0, 6000
+        "Blade Spirits",
+        5,
+        spellReagents["Blade Spirits"],
+        14,
+        38.0,
+        6.0,
+        6000,
+        14,
+        6000,
     ),
     "Dispel Field": SpellInfo(
-        "Dispel Field", 5, spellReagents["Dispel Field"], 14, 38.0, 3, 3000
+        "Dispel Field", 5, spellReagents["Dispel Field"], 14, 38.0, 3, 3000, 14, 3000
     ),
     "Incognito": SpellInfo(
-        "Incognito", 5, spellReagents["Incognito"], 14, 38.0, 1.5, 1500
+        "Incognito", 5, spellReagents["Incognito"], 14, 38.0, 1.5, 1500, 14, 1500
     ),
     "Magic Reflection": SpellInfo(
-        "Magic Reflection", 5, spellReagents["Magic Reflection"], 19, 38.0, 1.65, 1650
+        "Magic Reflection",
+        5,
+        spellReagents["Magic Reflection"],
+        14,
+        38.0,
+        1.65,
+        1650,
+        19,
+        3200,
     ),
     "Mind Blast": SpellInfo(
-        "Mind Blast", 5, spellReagents["Mind Blast"], 14, 38.0, 1.5, 2325
+        "Mind Blast", 5, spellReagents["Mind Blast"], 14, 38.0, 1.5, 2325, 14, 2325
     ),
     "Paralyze": SpellInfo(
-        "Paralyze", 5, spellReagents["Paralyze"], 14, 38.0, 1.5, 3000
+        "Paralyze", 5, spellReagents["Paralyze"], 14, 38.0, 1.5, 3000, 14, 3000
     ),
     "Poison Field": SpellInfo(
-        "Poison Field", 5, spellReagents["Poison Field"], 14, 38.0, 1.5, 1500
+        "Poison Field", 5, spellReagents["Poison Field"], 14, 38.0, 1.5, 1500, 14, 1500
     ),
     "Summon Creature": SpellInfo(
-        "Summon Creature", 5, spellReagents["Summon Creature"], 14, 38.0, 6.0, 6000
+        "Summon Creature",
+        5,
+        spellReagents["Summon Creature"],
+        14,
+        38.0,
+        6.0,
+        6000,
+        14,
+        6000,
     ),
     # Sixth Circle
-    "Dispel": SpellInfo("Dispel", 6, spellReagents["Dispel"], 20, 52.0, 3, 3000),
+    "Dispel": SpellInfo(
+        "Dispel", 6, spellReagents["Dispel"], 20, 52.0, 3, 3000, 20, 3000
+    ),
     "Energy Bolt": SpellInfo(
-        "Energy Bolt", 6, spellReagents["Energy Bolt"], 20, 52.0, 3, 3025
+        "Energy Bolt", 6, spellReagents["Energy Bolt"], 20, 52.0, 3, 3025, 20, 3025
     ),
     "Explosion": SpellInfo(
-        "Explosion", 6, spellReagents["Explosion"], 20, 52.0, 3, 3000
+        "Explosion", 6, spellReagents["Explosion"], 20, 52.0, 3, 3000, 20, 3000
     ),
     "Invisibility": SpellInfo(
-        "Invisibility", 6, spellReagents["Invisibility"], 20, 52.0, 1.75, 1750
+        "Invisibility", 6, spellReagents["Invisibility"], 20, 52.0, 1.75, 1750, 20, 1750
     ),
-    "Mark": SpellInfo("Mark", 6, spellReagents["Mark"], 20, 52.0, 1.75, 1750),
+    "Mark": SpellInfo("Mark", 6, spellReagents["Mark"], 20, 52.0, 1.75, 1750, 20, 1750),
     "Mass Curse": SpellInfo(
-        "Mass Curse", 6, spellReagents["Mass Curse"], 20, 52.0, 1.75, 1750
+        "Mass Curse", 6, spellReagents["Mass Curse"], 20, 52.0, 1.75, 1750, 20, 1750
     ),
     "Paralyze Field": SpellInfo(
-        "Paralyze Field", 6, spellReagents["Paralyze Field"], 20, 52.0, 1.75, 1750
+        "Paralyze Field",
+        6,
+        spellReagents["Paralyze Field"],
+        20,
+        52.0,
+        1.75,
+        1750,
+        20,
+        1750,
     ),
-    "Reveal": SpellInfo("Reveal", 6, spellReagents["Reveal"], 20, 52.0, 1.75, 1750),
+    "Reveal": SpellInfo(
+        "Reveal", 6, spellReagents["Reveal"], 20, 52.0, 1.75, 1750, 20, 1750
+    ),
     # Seventh Circle
     "Chain Lightning": SpellInfo(
-        "Chain Lightning", 7, spellReagents["Chain Lightning"], 40, 67.0, 2.0, 2000
+        "Chain Lightning",
+        7,
+        spellReagents["Chain Lightning"],
+        40,
+        67.0,
+        2.0,
+        2000,
+        40,
+        2000,
     ),
     "Energy Field": SpellInfo(
-        "Energy Field", 7, spellReagents["Energy Field"], 40, 67.0, 2.0, 2000
+        "Energy Field", 7, spellReagents["Energy Field"], 40, 67.0, 2.0, 2000, 40, 2000
     ),
     "Flamestrike": SpellInfo(
-        "Flamestrike", 7, spellReagents["Flamestrike"], 27, 67.0, 2.2, 2100
+        "Flamestrike", 7, spellReagents["Flamestrike"], 40, 67.0, 3.2, 3200, 27, 2100
     ),
     "Gate Travel": SpellInfo(
-        "Gate Travel", 7, spellReagents["Gate Travel"], 40, 67.0, 2.0, 2000
+        "Gate Travel", 7, spellReagents["Gate Travel"], 40, 67.0, 2.0, 2000, 40, 2000
     ),
     "Mana Vampire": SpellInfo(
-        "Mana Vampire", 7, spellReagents["Mana Vampire"], 40, 67.0, 2.0, 2000
+        "Mana Vampire", 7, spellReagents["Mana Vampire"], 40, 67.0, 2.0, 2000, 40, 2000
     ),
     "Mass Dispel": SpellInfo(
-        "Mass Dispel", 7, spellReagents["Mass Dispel"], 40, 67.0, 2.0, 2000
+        "Mass Dispel", 7, spellReagents["Mass Dispel"], 40, 67.0, 2.0, 2000, 40, 2000
     ),
     "Meteor Swarm": SpellInfo(
-        "Meteor Swarm", 7, spellReagents["Meteor Swarm"], 40, 67.0, 2.0, 2000
+        "Meteor Swarm", 7, spellReagents["Meteor Swarm"], 40, 67.0, 2.0, 2000, 40, 2000
     ),
     "Polymorph": SpellInfo(
-        "Polymorph", 7, spellReagents["Polymorph"], 40, 67.0, 2.0, 2000
+        "Polymorph", 7, spellReagents["Polymorph"], 40, 67.0, 2.0, 2000, 40, 2000
     ),
     # Eighth Circle
     "Earthquake": SpellInfo(
-        "Earthquake", 8, spellReagents["Earthquake"], 50, 81.0, 2.25, 2250
+        "Earthquake", 8, spellReagents["Earthquake"], 50, 81.0, 2.25, 2250, 50, 2250
     ),
     "Energy Vortex": SpellInfo(
-        "Energy Vortex", 8, spellReagents["Energy Vortex"], 50, 81.0, 2.25, 2250
+        "Energy Vortex",
+        8,
+        spellReagents["Energy Vortex"],
+        50,
+        81.0,
+        2.25,
+        2250,
+        50,
+        2250,
     ),
     "Resurrection": SpellInfo(
-        "Resurrection", 8, spellReagents["Resurrection"], 50, 81.0, 2.25, 2250
+        "Resurrection", 8, spellReagents["Resurrection"], 50, 81.0, 2.25, 2250, 50, 2250
     ),
     "Summon Air Elemental": SpellInfo(
         "Summon Air Elemental",
@@ -399,9 +488,19 @@ spells = {
         81.0,
         2.25,
         2250,
+        50,
+        2250,
     ),
     "Summon Daemon": SpellInfo(
-        "Summon Daemon", 8, spellReagents["Summon Daemon"], 50, 81.0, 4.8, 4800
+        "Summon Daemon",
+        8,
+        spellReagents["Summon Daemon"],
+        50,
+        81.0,
+        4.8,
+        4800,
+        50,
+        4800,
     ),
     "Summon Earth Elemental": SpellInfo(
         "Summon Earth Elemental",
@@ -410,6 +509,8 @@ spells = {
         50,
         81.0,
         2.25,
+        2250,
+        50,
         2250,
     ),
     "Summon Fire Elemental": SpellInfo(
@@ -420,6 +521,8 @@ spells = {
         81.0,
         2.25,
         2250,
+        50,
+        2250,
     ),
     "Summon Water Elemental": SpellInfo(
         "Summon Water Elemental",
@@ -428,6 +531,8 @@ spells = {
         50,
         81.0,
         2.25,
+        2250,
+        50,
         2250,
     ),
 }

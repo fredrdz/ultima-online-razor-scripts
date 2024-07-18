@@ -119,7 +119,7 @@ def CheckReagents(spellName, numberOfCasts=1):
 # Casting magery spells
 
 
-def CastSpellOnSelf(spellName, delay=None):
+def CastSpellOnSelf(spellName, delay=None, scroll=None):
     """
     Casts a spell self (on the player)
     """
@@ -131,7 +131,7 @@ def CastSpellOnSelf(spellName, delay=None):
 
     # init
     spell = spells[spellName]
-    scroll = FindScrollBySpell(spell.name)
+
     ## debug ##
     if spell.name == "Magic Reflection":
         scroll = None
@@ -147,8 +147,10 @@ def CastSpellOnSelf(spellName, delay=None):
     Target.Self()
 
     if delay is None or not isinstance(delay, int):
-        # use default delay if delay is None or not an int
-        delay = spell.delayInMs + config.shardLatency
+        if scroll:
+            delay = spell.scrollDelay + config.shardLatency
+        else:
+            delay = spell.delayInMs + config.shardLatency
 
     Misc.Pause(delay)
 
@@ -159,7 +161,7 @@ def CastSpellOnSelf(spellName, delay=None):
 # CastSpellOnSelf("Greater Heal", "fast")  # Uses default delay due to invalid type
 
 
-def CastSpellOnTarget(target, spellName, delay=None):
+def CastSpellOnTarget(target, spellName, delay=None, scroll=None):
     """
     Casts a spell on the target
     """
@@ -171,10 +173,9 @@ def CastSpellOnTarget(target, spellName, delay=None):
 
     # init
     spell = spells[spellName]
-    scroll = FindScrollBySpell(spell.name)
 
     if scroll:
-        # Player.HeadMessage(colors["debug"], f"[scroll: {spell.name}]")
+        Player.HeadMessage(colors["debug"], f"[scroll: {spell.name}]")
         Items.UseItem(scroll)
     else:
         Spells.CastMagery(spell.name)
@@ -183,8 +184,10 @@ def CastSpellOnTarget(target, spellName, delay=None):
     Target.TargetExecute(target)
 
     if delay is None or not isinstance(delay, int):
-        # use default delay if delay is None or not an int
-        delay = spell.delayInMs + config.shardLatency
+        if scroll:
+            delay = spell.scrollDelay + config.shardLatency
+        else:
+            delay = spell.delayInMs + config.shardLatency
 
     Misc.Pause(delay)
 
@@ -256,17 +259,25 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
 
             # check if player has changed requested spell
             spellName = Misc.ReadSharedValue("spell")
+            spellMana = spells[spellName].manaCost
+            spellDelay = spells[spellName].delayInMs
+
+            # check if player has a scroll for spell
+            scroll = FindScrollBySpell(spellName)
+            if scroll:
+                spellMana = spells[spellName].scrollMana
+                spellDelay = spells[spellName].scrollDelay
 
             # equip shield (kite)
             if shield:
-                equip_left_hand(shield, 1)
+                equip_left_hand(shield, 0)
 
             # check hp/mp
             hp_diff = Player.HitsMax - Player.Hits
             mp_diff = Player.ManaMax - Player.Mana
 
             # check player status and act accordingly
-            if 0 < hp_diff >= 70:
+            if 0 < hp_diff >= 65:
                 Player.HeadMessage(colors["alert"], "[hp]")
                 break
             elif Journal.SearchByType("You cannot move!", "System"):
@@ -287,8 +298,6 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
                 or Player.Int < Misc.ReadSharedValue("int")
             ):
                 break
-            elif Player.Poisoned and Timer.Check("cast_cd") is False:
-                break
             # spell checks
             elif spellName == "":
                 Player.HeadMessage(colors["debug"], "[no spell]")
@@ -298,7 +307,7 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
                 continue
             elif cast_count == casts:
                 break
-            elif Player.Mana <= spells[spellName].manaCost:
+            elif Player.Mana <= spellMana:
                 Player.HeadMessage(colors["fail"], "[oom]")
                 break
             elif CheckReagents(spellName) is False:
@@ -323,8 +332,8 @@ def CastSpellRepeatably(spellName="", enemy=None, casts=-1):
             # actual spell cast
             if Target.HasTarget():
                 Target.Cancel()
-            CastSpellOnTarget(enemy, spellName, 0)
-            Timer.Create("cast_cd", spells[spellName].delayInMs + config.shardLatency)
+            CastSpellOnTarget(enemy, spellName, 0, scroll)
+            Timer.Create("cast_cd", spellDelay + config.shardLatency)
             Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
             # increment cast count
             cast_count += 1

@@ -3,8 +3,10 @@ import sys
 
 # Custom Packages
 import Misc, Mobiles, Player, Target
+from config import shardLatency
 from glossary.colors import colors
-from utils.magery import CastSpellOnSelf, CastSpellOnTarget
+from glossary.spells import spells
+from utils.magery import Meditation, CastSpellOnSelf, CheckReagents, FindScrollBySpell
 
 """
 Area to test functions.
@@ -25,8 +27,18 @@ if target:
         colors["debug"],
         ">> debug target",
     )
+
+    # check if player has a scroll for spell
+    gheal_scroll = FindScrollBySpell("Greater Heal")
+
     # test moblie targeted funcs here
-    spell = "Cure"
-    for _ in range(5):
+    spell = "Greater Heal"
+    for _ in range(3):
         # CastSpellOnTarget(target, spell)
-        CastSpellOnSelf(spell, 800 + 150)
+        CastSpellOnSelf(
+            "Greater Heal",
+            0,
+            # gheal_scroll,
+        )
+        # Misc.Pause(spells["Greater Heal"].scrollDelay + shardLatency)
+        Misc.Pause(spells["Greater Heal"].delayInMs + shardLatency)
