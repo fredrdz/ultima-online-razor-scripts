@@ -10,10 +10,10 @@ from glossary.colors import colors
 enemy = None
 
 # find items
-weapon = FindItem(0x0F47, Player.Backpack)
+weapon = FindItem(0x1403, Player.Backpack)
 
 # stop other scripts
-scripts = ["_defense.py", "_cast.py"]
+scripts = ["_defense.py"]
 
 for script in scripts:
     Misc.ScriptStop(script)
@@ -27,7 +27,7 @@ while not Player.IsGhost:
     # check hp
     hp_diff = Player.HitsMax - Player.Hits
 
-    if 0 < hp_diff >= 60:
+    if 0 < hp_diff >= 70:
         Player.HeadMessage(colors["alert"], "[hp]")
         break
 
@@ -76,8 +76,12 @@ while not Player.IsGhost:
 
         if enemy and Timer.Check("attack_cd") is False:
             Player.Attack(enemy)
-            Timer.Create("attack_cd", 20000)
+            Timer.Create("attack_cd", 30000)
+
+        if enemy:
+            if enemy.poisoned:
+                break
 
 # resume defense script
 Misc.ScriptRun("_defense.py")
-Misc.SetSharedValue("spell", "")
+Misc.SetSharedValue("spell", "Poison")

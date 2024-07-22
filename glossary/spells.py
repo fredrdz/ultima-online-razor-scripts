@@ -265,7 +265,7 @@ spells = {
     "Feeblemind": SpellInfo(
         "Feeblemind", 1, spellReagents["Feeblemind"], 4, 0.0, 0.6, 600, 4, 600
     ),
-    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 4, 0.0, 5.75, 575, 4, 575),
+    "Heal": SpellInfo("Heal", 1, spellReagents["Heal"], 7, 0.0, 5.75, 575, 7, 575),
     "Magic Arrow": SpellInfo(
         "Magic Arrow", 1, spellReagents["Magic Arrow"], 4, 0.0, 1, 1025, 4, 1025
     ),
@@ -338,7 +338,7 @@ spells = {
         "Fire Field", 4, spellReagents["Fire Field"], 11, 24.0, 1.25, 2000, 11, 2000
     ),
     "Greater Heal": SpellInfo(
-        "Greater Heal", 4, spellReagents["Greater Heal"], 11, 24.0, 2, 2000, 23, 825
+        "Greater Heal", 4, spellReagents["Greater Heal"], 11, 24.0, 2, 2000, 22, 825
     ),
     "Lightning": SpellInfo(
         "Lightning", 4, spellReagents["Lightning"], 11, 24, 2.35, 2350, 23, 1350
@@ -373,10 +373,10 @@ spells = {
         spellReagents["Magic Reflection"],
         14,
         38.0,
-        1.65,
-        1650,
+        3,
+        3000,
         19,
-        3200,
+        1700,
     ),
     "Mind Blast": SpellInfo(
         "Mind Blast", 5, spellReagents["Mind Blast"], 14, 38.0, 1.5, 2325, 14, 2325

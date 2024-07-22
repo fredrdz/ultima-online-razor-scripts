@@ -1,9 +1,18 @@
+# System packages
+import sys
+
 # custom RE packages
 import Items, Journal, Misc, Player, Target, Timer
 from config import shardLatency
 from utils.items import FindItem
 from utils.item_actions.common import equip_left_hand
-from utils.magery import Meditation, CastSpellOnSelf, CheckReagents, FindScrollBySpell
+from utils.magery import (
+    CastSpellRepeatably,
+    Meditation,
+    CastSpellOnSelf,
+    CheckReagents,
+    FindScrollBySpell,
+)
 from glossary.items.healing import FindBandage
 from glossary.items.potions import potions
 from glossary.spells import spells
@@ -11,11 +20,9 @@ from glossary.colors import colors
 
 
 # ---------------------------------------------------------------------
-# init
-Player.HeadMessage(colors["status"], "[defense]")
 
 # stop other scripts
-scripts = ["_melee.py", "_cast.py"]
+scripts = ["_melee.py"]
 for script in scripts:
     Misc.ScriptStop(script)
 
@@ -25,46 +32,44 @@ dex = Misc.ReadSharedValue("dex")
 int = Misc.ReadSharedValue("int")
 
 # find items
-gheal_scroll = FindScrollBySpell("Greater Heal")
 bandages = FindBandage(Player.Backpack)
 shield = FindItem(0x1B74, Player.Backpack)
 cure_pot = FindItem(potions["cure potion"].itemID, Player.Backpack)
+mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
+heal_pot = FindItem(potions["greater heal potion"].itemID, Player.Backpack)
+gheal_scroll = FindScrollBySpell("Greater Heal")
 
-# reset shared spell
+# init loop
 Misc.SetSharedValue("spell", "")
+enemy = -1
+spell = ""
 
-# check shared cast cd timer
-if Misc.ReadSharedValue("cast_cd") > 0:
-    Timer.Create("cast_cd", Misc.ReadSharedValue("cast_cd"))
 
 # ---------------------------------------------------------------------
+if not bandages:
+    Misc.SendMessage(">> no bandages", colors["fatal"])
+    sys.exit()
+
 # main loop
 while not Player.IsGhost:
-    Misc.Pause(50)
-
-    if not bandages:
-        Misc.SendMessage(">> no bandages", colors["fatal"])
-        Misc.Pause(5000)
-        continue
-
-    # equip shield (kite)
-    # if shield:
-    #     equip_left_hand(shield, 0)
+    Misc.Pause(25)
 
     # check hp
     hp_diff = Player.HitsMax - Player.Hits
 
     # check for poison
-    if 0 < hp_diff > 40 and Player.Poisoned and Timer.Check("cast_cd") is False:
-        Player.HeadMessage(colors["alert"], "[poisoned]")
-        # find cure method
-        if Player.Mana >= spells["Cure"].manaCost and CheckReagents("Cure"):
-            CastSpellOnSelf("Cure")
-            Misc.SetSharedValue("cast_cd", -1)
-        elif cure_pot and Timer.Check("pot_cd") is False:
-            Player.HeadMessage(colors["status"], "[cure pot]")
-            Items.UseItem(cure_pot)
-            Timer.Create("pot_cd", 1000)
+    if 0 < hp_diff >= 30:
+        if Player.Poisoned:
+            if Timer.Check("cast_cd") is False:
+                Player.HeadMessage(colors["alert"], "[poisoned]")
+                # find cure method
+                if Player.Mana >= spells["Cure"].manaCost and CheckReagents("Cure"):
+                    CastSpellOnSelf("Cure", 0)
+                    Timer.Create("cast_cd", spells["Cure"].delayInMs + shardLatency)
+                elif cure_pot and Timer.Check("pot_cd") is False:
+                    Player.HeadMessage(colors["status"], "[cure pot]")
+                    Items.UseItem(cure_pot)
+                    Timer.Create("pot_cd", 1000)
 
     # use bandage
     if (
@@ -79,41 +84,38 @@ while not Player.IsGhost:
         Target.Self()
         Timer.Create("bandage_cd", 2350 + shardLatency)
 
-    if (
-        0 < hp_diff >= 100
-        and gheal_scroll
-        and Player.Mana >= spells["Greater Heal"].scrollMana
-        and Timer.Check("cast_cd") is False
-    ):
-        if CheckReagents("Greater Heal"):
-            CastSpellOnSelf(
-                "Greater Heal",
-                0,
-                gheal_scroll,
-            )
-            Timer.Create("cast_cd", spells["Greater Heal"].scrollDelay + shardLatency)
-            Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
-    elif (
-        0 < hp_diff >= 90
-        and Player.Mana >= spells["Heal"].manaCost
-        and Timer.Check("cast_cd") is False
-    ):
-        if CheckReagents("Heal"):
-            CastSpellOnSelf("Heal", 0)
-            Timer.Create("cast_cd", spells["Heal"].delayInMs + shardLatency)
-            Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
-    elif (
-        0 < hp_diff >= 40
-        and Player.Mana >= spells["Greater Heal"].manaCost
-        and Timer.Check("cast_cd") is False
-    ):
-        if CheckReagents("Greater Heal"):
-            CastSpellOnSelf(
-                "Greater Heal",
-                0,
-            )
-            Timer.Create("cast_cd", spells["Greater Heal"].delayInMs + shardLatency)
-            Misc.SetSharedValue("cast_cd", Timer.Remaining("cast_cd"))
+    # spell healing
+    if 0 < hp_diff >= 105:
+        if (
+            gheal_scroll
+            and Player.Mana >= spells["Greater Heal"].scrollMana
+            and Timer.Check("cast_cd") is False
+        ):
+            if CheckReagents("Greater Heal"):
+                CastSpellOnSelf(
+                    "Greater Heal",
+                    0,
+                    gheal_scroll,
+                )
+                Timer.Create(
+                    "cast_cd", spells["Greater Heal"].scrollDelay + shardLatency
+                )
+    elif 0 < hp_diff >= 70:
+        if (
+            Player.Mana >= spells["Greater Heal"].manaCost
+            and Timer.Check("cast_cd") is False
+        ):
+            if CheckReagents("Greater Heal"):
+                CastSpellOnSelf(
+                    "Greater Heal",
+                    0,
+                )
+                Timer.Create("cast_cd", spells["Greater Heal"].delayInMs + shardLatency)
+    elif 0 < hp_diff >= 60:
+        if Player.Mana >= spells["Heal"].manaCost and Timer.Check("cast_cd") is False:
+            if CheckReagents("Heal"):
+                CastSpellOnSelf("Heal", 0)
+                Timer.Create("cast_cd", spells["Heal"].delayInMs + shardLatency)
 
     # check mp
     mp_diff = Player.ManaMax - Player.Mana
@@ -124,36 +126,25 @@ while not Player.IsGhost:
     if Player.WarMode is True:
         if Timer.Check("pot_cd") is False:
             # heal pots
-            if 0 < hp_diff >= 90:
-                heal_pot = FindItem(
-                    potions["greater heal potion"].itemID, Player.Backpack
-                )
+            if 0 < hp_diff >= 110:
                 if heal_pot:
-                    Player.HeadMessage(colors["status"], "[gheal pot]")
                     Items.UseItem(heal_pot)
-                    Timer.Create("pot_cd", 1000)
+                    Timer.Create("pot_cd", 500)
             # mana pots
             elif 0 < mp_diff >= 40:
-                mana_pot = FindItem(
-                    potions["greater mana potion"].itemID, Player.Backpack
-                )
                 if mana_pot:
-                    Player.HeadMessage(colors["status"], "[gmana pot]")
                     Items.UseItem(mana_pot)
-                    Timer.Create("pot_cd", 1000)
+                    Timer.Create("pot_cd", 500)
 
     # check for paralysis
-    if (
-        Journal.SearchByType("You cannot move!", "System")
-        and Timer.Check("cast_cd") is False
-    ):
-        Player.HeadMessage(colors["alert"], "[paralyzed]")
-        if Player.Mana >= spells["Magic Arrow"].manaCost and CheckReagents(
-            "Magic Arrow"
-        ):
-            Journal.Clear()
-            CastSpellOnSelf("Magic Arrow")
-            Misc.SetSharedValue("cast_cd", -1)
+    if Journal.SearchByType("You cannot move!", "System"):
+        if Timer.Check("cast_cd") is False:
+            Player.HeadMessage(colors["alert"], "[paralyzed]")
+            if Player.Mana >= spells["Magic Arrow"].manaCost and CheckReagents(
+                "Magic Arrow"
+            ):
+                Journal.Clear()
+                CastSpellOnSelf("Magic Arrow")
 
     # check for curse
     if Player.WarMode is True:
@@ -165,12 +156,29 @@ while not Player.IsGhost:
             ):
                 Player.HeadMessage(colors["alert"], "[cursed]")
                 # bless buff lasts about 3 mins
-                CastSpellOnSelf("Bless")
-                Misc.SetSharedValue("cast_cd", -1)
-                agility_pot = FindItem(
-                    potions["greater agility potion"].itemID, Player.Backpack
-                )
-                if agility_pot:
-                    Player.HeadMessage(colors["debug"], "[agility pot]")
-                    Items.UseItem(agility_pot)
-                    Timer.Create("pot_cd", 1000)
+                CastSpellOnSelf("Bless", 0)
+                Timer.Create("cast_cd", spells["Bless"].delayInMs + shardLatency)
+
+    # check bless
+
+    # manual offensive targeting
+    if enemy <= 0:
+        enemy = Misc.ReadSharedValue("kill_target")
+
+    # swap to offensive casting if spell is set
+    if not spell:
+        spell = Misc.ReadSharedValue("spell")
+    else:
+        # attack
+        Player.HeadMessage(colors["status"], "[offensive]")
+        remaining = CastSpellRepeatably("spell", enemy)
+        if remaining > 0:
+            Timer.Create("cast_cd", remaining)
+        # defend
+        Player.HeadMessage(colors["status"], "[defense]")
+        spell = ""
+        enemy = -1
+
+    # equip shield (kite)
+    # if shield:
+    #     equip_left_hand(shield, 0)
