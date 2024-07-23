@@ -11,6 +11,7 @@ enemy = None
 
 # find items
 weapon = FindItem(0x1403, Player.Backpack)
+shield = FindItem(0x1B74, Player.Backpack)
 
 # stop other scripts
 scripts = ["_defense.py"]
@@ -22,12 +23,12 @@ for script in scripts:
 # main loop
 while not Player.IsGhost:
     # reduce cpu usage
-    Misc.Pause(50)
+    Misc.Pause(25)
 
     # check hp
     hp_diff = Player.HitsMax - Player.Hits
 
-    if 0 < hp_diff >= 70:
+    if 0 < hp_diff >= 60:
         Player.HeadMessage(colors["alert"], "[hp]")
         break
 
@@ -49,7 +50,7 @@ while not Player.IsGhost:
     if Player.WarMode is True:
         if Timer.Check("pot_cd") is False:
             # mana pots
-            if 0 < mp_diff >= 50:
+            if 0 < mp_diff >= 40:
                 mana_pot = FindItem(
                     potions["greater mana potion"].itemID, Player.Backpack
                 )
@@ -79,9 +80,9 @@ while not Player.IsGhost:
             Timer.Create("attack_cd", 30000)
 
         if enemy:
-            if enemy.poisoned:
+            if enemy.Poisoned:
                 break
 
 # resume defense script
 Misc.ScriptRun("_defense.py")
-Misc.SetSharedValue("spell", "Poison")
+Misc.SetSharedValue("spell", "Lightning")

@@ -58,7 +58,7 @@ while not Player.IsGhost:
     hp_diff = Player.HitsMax - Player.Hits
 
     # check for poison
-    if 0 < hp_diff >= 30:
+    if 0 < hp_diff >= 80:
         if Player.Poisoned:
             if Timer.Check("cast_cd") is False:
                 Player.HeadMessage(colors["alert"], "[poisoned]")
@@ -85,7 +85,7 @@ while not Player.IsGhost:
         Timer.Create("bandage_cd", 2350 + shardLatency)
 
     # spell healing
-    if 0 < hp_diff >= 105:
+    if 0 < hp_diff >= 110:
         if (
             gheal_scroll
             and Player.Mana >= spells["Greater Heal"].scrollMana
@@ -100,6 +100,11 @@ while not Player.IsGhost:
                 Timer.Create(
                     "cast_cd", spells["Greater Heal"].scrollDelay + shardLatency
                 )
+    elif 0 < hp_diff >= 100:
+        if Player.Mana >= spells["Heal"].manaCost and Timer.Check("cast_cd") is False:
+            if CheckReagents("Heal"):
+                CastSpellOnSelf("Heal", 0)
+                Timer.Create("cast_cd", spells["Heal"].delayInMs + shardLatency)
     elif 0 < hp_diff >= 70:
         if (
             Player.Mana >= spells["Greater Heal"].manaCost
@@ -111,11 +116,6 @@ while not Player.IsGhost:
                     0,
                 )
                 Timer.Create("cast_cd", spells["Greater Heal"].delayInMs + shardLatency)
-    elif 0 < hp_diff >= 60:
-        if Player.Mana >= spells["Heal"].manaCost and Timer.Check("cast_cd") is False:
-            if CheckReagents("Heal"):
-                CastSpellOnSelf("Heal", 0)
-                Timer.Create("cast_cd", spells["Heal"].delayInMs + shardLatency)
 
     # check mp
     mp_diff = Player.ManaMax - Player.Mana
@@ -180,5 +180,5 @@ while not Player.IsGhost:
         enemy = -1
 
     # equip shield (kite)
-    # if shield:
-    #     equip_left_hand(shield, 0)
+    if shield:
+        equip_left_hand(shield, 0)

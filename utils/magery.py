@@ -227,7 +227,7 @@ def CastSpellRepeatably(spellName="", enemySerial=-1, casts=-1):
 
     # init for loop
     Journal.Clear()
-    # shield = FindItem(0x1B74, Player.Backpack)
+    shield = FindItem(0x1B74, Player.Backpack)
     mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
     cast_count = 0
 
@@ -258,10 +258,6 @@ def CastSpellRepeatably(spellName="", enemySerial=-1, casts=-1):
             if scroll:
                 spellMana = spells[spellName].scrollMana
                 spellDelay = spells[spellName].scrollDelay
-
-            # equip shield (kite)
-            # if shield:
-            #     equip_left_hand(shield, 0)
 
             # check hp/mp
             hp_diff = Player.HitsMax - Player.Hits
@@ -325,13 +321,16 @@ def CastSpellRepeatably(spellName="", enemySerial=-1, casts=-1):
                 Target.Cancel()
             CastSpellOnTarget(enemy, spellName, 0, scroll)
             Timer.Create("cast_cd", spellDelay + config.shardLatency)
+            # equip shield (kite)
+            if shield:
+                equip_left_hand(shield, 0)
             # increment cast count
             cast_count += 1
             # spell combos
             if spellName == "Curse":
                 Misc.SetSharedValue("spell", "Poison")
             elif spellName == "Magic Arrow":
-                Misc.SetSharedValue("spell", "Weaken")
+                Misc.SetSharedValue("spell", "Lightning")
             elif spellName == "Paralyze":
                 Misc.SetSharedValue("spell", "Weaken")
             elif spellName == "Weaken":
@@ -343,12 +342,13 @@ def CastSpellRepeatably(spellName="", enemySerial=-1, casts=-1):
             elif spellName == "Poison":
                 Misc.SetSharedValue("spell", "Lightning")
             elif spellName == "Flamestrike":
+                if enemy.Poisoned:
+                    Misc.SetSharedValue("spell", "Flamestrike")
+                    continue
                 Misc.SetSharedValue("spell", "Lightning")
             elif spellName == "Lightning":
                 if enemy.Poisoned:
                     Misc.SetSharedValue("spell", "Flamestrike")
-                    continue
-                Misc.SetSharedValue("spell", "Poison")
             ## debug ##
             # Sound.Log(True)
             # sounds = List[Int32]([249])  # meditation sound
