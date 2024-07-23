@@ -122,10 +122,13 @@ craftConfig = {
     # a dictionary of skill paths and their values
     # define what item names to craft and up to which maximum skill value
     "paths": {
-        "skill": {"club": 70.0, "blank scroll": 100.0},
+        "skill": {
+            "club": 70.0,
+            "blank scroll": 100.0,
+        },
         "profit": {
             "club": 70.0,
-            "test": 100.0,
+            "blank scroll": 100.0,
         },
     },
 }

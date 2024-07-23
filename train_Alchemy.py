@@ -50,7 +50,9 @@ containerInBank = 0x40054709
 # a list of tuples containing itemID and count
 depositItems = [
     (0x0EED, -1),  # gold
+    (potions["greater mana potion"].itemID, -1),
     (potions["lesser poison potion"].itemID, -1),
+    (potions["deadly poison potion"].itemID, -1),
 ]
 
 # ---------------------------------------------------------------------
@@ -119,13 +121,16 @@ craftConfig = {
     "skillTools": alchTools,
     "skillCraftables": alchCraftables,
     # skill path to use: "skill" or "profit"
-    "usePath": "skill",
+    "usePath": "profit",
     # a dictionary of skill paths and their values
     # define what item names to craft and up to which maximum skill value
     "paths": {
-        "skill": {"lesser poison": 100.0},
+        "skill": {
+            "lesser poison": 100.0,
+        },
         "profit": {
-            "placeholder": 100.0,
+            "deadly poison": 100.0,
+            "greater mana": 120.0,
         },
     },
 }

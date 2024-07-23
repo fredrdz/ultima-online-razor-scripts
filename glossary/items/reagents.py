@@ -9,4 +9,5 @@ reagents = {
     "Nightshade": myItem("Nightshade", 0x0F88, 0x0000, "reagent", 0.1),
     "Spider's Silk": myItem("Spider's Silk", 0x0F8D, 0x0000, "reagent", 0.1),
     "Sulfurous Ash": myItem("Sulfurous Ash", 0x0F8C, 0x0000, "reagent", 0.1),
+    "Eye of Newt": myItem("Eye of Newt", 0x0F87, 0x0000, "reagent", 0.1),
 }
