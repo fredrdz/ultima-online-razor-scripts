@@ -13,7 +13,7 @@ if Player.Name == "Talik Starr":
     Misc.SetSharedValue("lj_runebook", 0x40121041)
     # misc
     Misc.SetSharedValue("spell", "")
-    Misc.SetSharedValue("cast_cd", -1)
+    Misc.SetSharedValue("physical_attack", False)
     Misc.SetSharedValue("kill_target", -1)
     # agents
     if BuyAgent.Status() is False:

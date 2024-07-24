@@ -6,7 +6,10 @@ import Misc, Mobiles, Player, Target
 from config import shardLatency
 from glossary.colors import colors
 from glossary.spells import spells
+from glossary.items.potions import potions
+from glossary.items.scrolls import mageryScrolls
 from utils.magery import Meditation, CastSpellOnSelf, CheckReagents, FindScrollBySpell
+from utils.items import FindItem, FindNumberOfItems
 
 """
 Area to test functions.
@@ -28,10 +31,26 @@ if target:
         ">> debug target",
     )
 
-    # check if player has a scroll for spell
+    # find items
     gheal_scroll = FindScrollBySpell("Greater Heal")
+    explo_pot = FindItem(potions["greater explosion potion"].itemID, Player.Backpack)
 
-    # test moblie targeted funcs here
+    # test mobile targeted funcs here
+    ######
+
+    # toss an explosion potion
+    for _ in range(3):
+        if explo_pot:
+            Items.UseItem(explo_pot)
+            Target.WaitForTarget(1000, False)
+            Misc.Pause(2000)
+            Player.HeadMessage(colors["debug"], "[explo toss]")
+            Target.TargetExecute(target)
+            Misc.Pause(12000)
+
+    sys.exit()
+    # unused code below for reference
+
     spell = "Greater Heal"
     for _ in range(3):
         # CastSpellOnTarget(target, spell)

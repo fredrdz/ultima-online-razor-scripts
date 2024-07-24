@@ -6,12 +6,12 @@ import Items, Journal, Misc, Player, Target, Timer
 from config import shardLatency
 from utils.items import FindItem
 from utils.item_actions.common import equip_left_hand
+from utils.melee import PhysicalAttack
 from utils.magery import (
     CastSpellRepeatably,
     Meditation,
     CastSpellOnSelf,
     CheckReagents,
-    FindScrollBySpell,
 )
 from glossary.items.healing import FindBandage
 from glossary.items.potions import potions
@@ -20,16 +20,20 @@ from glossary.colors import colors
 
 
 # ---------------------------------------------------------------------
-
-# stop other scripts
-scripts = ["_melee.py"]
-for script in scripts:
-    Misc.ScriptStop(script)
+# init
 
 # set shared values based on player name
 str = Misc.ReadSharedValue("str")
 dex = Misc.ReadSharedValue("dex")
 int = Misc.ReadSharedValue("int")
+
+# clear shared spell
+Misc.SetSharedValue("spell", "")
+
+# init event triggers
+enemy = -1
+spell = ""
+physical_attack = False
 
 # find items
 bandages = FindBandage(Player.Backpack)
@@ -37,12 +41,6 @@ shield = FindItem(0x1B74, Player.Backpack)
 cure_pot = FindItem(potions["cure potion"].itemID, Player.Backpack)
 mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
 heal_pot = FindItem(potions["greater heal potion"].itemID, Player.Backpack)
-gheal_scroll = FindScrollBySpell("Greater Heal")
-
-# init loop
-Misc.SetSharedValue("spell", "")
-enemy = -1
-spell = ""
 
 
 # ---------------------------------------------------------------------
@@ -54,22 +52,25 @@ if not bandages:
 while not Player.IsGhost:
     Misc.Pause(25)
 
-    # check hp
+    # set hp/mp
     hp_diff = Player.HitsMax - Player.Hits
+    mp_diff = Player.ManaMax - Player.Mana
 
     # check for poison
-    if 0 < hp_diff >= 80:
-        if Player.Poisoned:
-            if Timer.Check("cast_cd") is False:
-                Player.HeadMessage(colors["alert"], "[poisoned]")
-                # find cure method
-                if Player.Mana >= spells["Cure"].manaCost and CheckReagents("Cure"):
-                    CastSpellOnSelf("Cure", 0)
-                    Timer.Create("cast_cd", spells["Cure"].delayInMs + shardLatency)
-                elif cure_pot and Timer.Check("pot_cd") is False:
-                    Player.HeadMessage(colors["status"], "[cure pot]")
-                    Items.UseItem(cure_pot)
-                    Timer.Create("pot_cd", 1000)
+    if Player.Poisoned:
+        if Timer.Check("cast_cd") is False:
+            Player.HeadMessage(colors["alert"], "[poisoned]")
+            # find cure method
+            if Player.Mana >= spells["Cure"].manaCost and CheckReagents("Cure"):
+                if Target.HasTarget():
+                    Target.Cancel()
+                CastSpellOnSelf("Cure", 100)
+                Timer.Create("cast_cd", spells["Cure"].delayInMs + shardLatency)
+                continue
+            elif cure_pot and Timer.Check("pot_cd") is False:
+                Player.HeadMessage(colors["status"], "[cure pot]")
+                Items.UseItem(cure_pot)
+                Timer.Create("pot_cd", 1000)
 
     # use bandage
     if (
@@ -84,45 +85,7 @@ while not Player.IsGhost:
         Target.Self()
         Timer.Create("bandage_cd", 2350 + shardLatency)
 
-    # spell healing
-    if 0 < hp_diff >= 110:
-        if (
-            gheal_scroll
-            and Player.Mana >= spells["Greater Heal"].scrollMana
-            and Timer.Check("cast_cd") is False
-        ):
-            if CheckReagents("Greater Heal"):
-                CastSpellOnSelf(
-                    "Greater Heal",
-                    0,
-                    gheal_scroll,
-                )
-                Timer.Create(
-                    "cast_cd", spells["Greater Heal"].scrollDelay + shardLatency
-                )
-    elif 0 < hp_diff >= 100:
-        if Player.Mana >= spells["Heal"].manaCost and Timer.Check("cast_cd") is False:
-            if CheckReagents("Heal"):
-                CastSpellOnSelf("Heal", 0)
-                Timer.Create("cast_cd", spells["Heal"].delayInMs + shardLatency)
-    elif 0 < hp_diff >= 70:
-        if (
-            Player.Mana >= spells["Greater Heal"].manaCost
-            and Timer.Check("cast_cd") is False
-        ):
-            if CheckReagents("Greater Heal"):
-                CastSpellOnSelf(
-                    "Greater Heal",
-                    0,
-                )
-                Timer.Create("cast_cd", spells["Greater Heal"].delayInMs + shardLatency)
-
-    # check mp
-    mp_diff = Player.ManaMax - Player.Mana
-    if hp_diff == 0 and Player.WarMode is False:
-        if mp_diff != 0:
-            Meditation()
-
+    # check pots
     if Player.WarMode is True:
         if Timer.Check("pot_cd") is False:
             # heal pots
@@ -136,6 +99,32 @@ while not Player.IsGhost:
                     Items.UseItem(mana_pot)
                     Timer.Create("pot_cd", 500)
 
+    # check hp
+    if 0 < hp_diff >= 90:
+        if Player.Mana >= spells["Heal"].manaCost and Timer.Check("cast_cd") is False:
+            if CheckReagents("Heal"):
+                if Target.HasTarget():
+                    Target.Cancel()
+                CastSpellOnSelf("Heal", 100)
+                Timer.Create("cast_cd", spells["Heal"].delayInMs + shardLatency)
+                continue
+    elif 0 < hp_diff >= 60:
+        if (
+            Player.Mana >= spells["Greater Heal"].manaCost
+            and Timer.Check("cast_cd") is False
+        ):
+            if CheckReagents("Greater Heal"):
+                if Target.HasTarget():
+                    Target.Cancel()
+                CastSpellOnSelf(
+                    "Greater Heal",
+                    100,
+                )
+                Timer.Create("cast_cd", spells["Greater Heal"].delayInMs + shardLatency)
+                continue
+    elif 0 < hp_diff >= 50:
+        continue
+
     # check for paralysis
     if Journal.SearchByType("You cannot move!", "System"):
         if Timer.Check("cast_cd") is False:
@@ -145,6 +134,7 @@ while not Player.IsGhost:
             ):
                 Journal.Clear()
                 CastSpellOnSelf("Magic Arrow")
+                continue
 
     # check for curse
     if Player.WarMode is True:
@@ -156,29 +146,48 @@ while not Player.IsGhost:
             ):
                 Player.HeadMessage(colors["alert"], "[cursed]")
                 # bless buff lasts about 3 mins
-                CastSpellOnSelf("Bless", 0)
+                CastSpellOnSelf("Bless", 100)
                 Timer.Create("cast_cd", spells["Bless"].delayInMs + shardLatency)
+                continue
 
     # check bless
+    # wip
 
-    # manual offensive targeting
+    # set attack target
     if enemy <= 0:
         enemy = Misc.ReadSharedValue("kill_target")
 
-    # swap to offensive casting if spell is set
-    if not spell:
-        spell = Misc.ReadSharedValue("spell")
-    else:
-        # attack
-        Player.HeadMessage(colors["status"], "[offensive]")
-        remaining = CastSpellRepeatably("spell", enemy)
-        if remaining > 0:
-            Timer.Create("cast_cd", remaining)
-        # defend
-        Player.HeadMessage(colors["status"], "[defense]")
-        spell = ""
-        enemy = -1
+    if enemy >= 0:
+        if hp_diff <= 50:
+            # physical attack
+            physical_attack = Misc.ReadSharedValue("physical_attack")
+            if physical_attack:
+                Player.HeadMessage(colors["status"], "[weapon]")
+                PhysicalAttack(enemy)
+                # defend
+                Player.HeadMessage(colors["status"], "[defend]")
+                physical_attack = False
+                enemy = -1
+                continue
+
+            # magic attack
+            spell = Misc.ReadSharedValue("spell")
+            if spell:
+                Player.HeadMessage(colors["status"], "[magic]")
+                remaining = CastSpellRepeatably("spell", enemy)
+                if remaining > 0:
+                    Timer.Create("cast_cd", remaining)
+                # defend
+                Player.HeadMessage(colors["status"], "[defend]")
+                spell = ""
+                enemy = -1
+                continue
 
     # equip shield (kite)
     if shield:
-        equip_left_hand(shield, 0)
+        equip_left_hand(shield, 300 + shardLatency)
+
+    # check if we can meditate
+    if hp_diff == 0 and Player.WarMode is False:
+        if mp_diff != 0:
+            Meditation()

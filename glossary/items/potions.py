@@ -29,4 +29,12 @@ potions = {
     "greater agility potion": myItem(
         "greater agility potion", 0x0F08, 0x0000, "potion", 1
     ),
+    # explosion
+    "lesser explosion potion": myItem(
+        "lesser explosion potion", 0x0F0B, 0x0000, "potion", 1
+    ),
+    "explosion potion": myItem("explosion potion", 0x0F0B, 0x0000, "potion", 1),
+    "greater explosion potion": myItem(
+        "greater explosion potion", 0x1847, 0x0490, "potion", 1
+    ),
 }
