@@ -7,6 +7,7 @@ from config import shardLatency
 import Items, Journal, Misc, Mobiles, Player, Timer
 from utils.item_actions.common import equip_left_hand, unequip_hands
 from utils.items import FindItem
+from glossary.items.healing import FindBandage
 from glossary.items.potions import potions
 from glossary.colors import colors
 
@@ -48,28 +49,30 @@ def PhysicalAttack(enemySerial=-1):
             enemy = Mobiles.Select(enemies, "Nearest")
 
     # find items
-    weapon = FindItem(0x1401, Player.Backpack)
-    shield = FindItem(0x1B74, Player.Backpack)
+    bandages = FindBandage(Player.Backpack)
+    weapon = FindItem(0x0F4D, Player.Backpack)
+    shield = FindItem(0x1B76, Player.Backpack)
     mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
 
     # start physical attack
     if enemy:
         # equip weapon
-        if weapon and shield:
-            if Player.CheckLayer("RightHand"):
-                if Player.GetItemOnLayer("RightHand").ItemID != weapon.ItemID:
+        if weapon:
+            if Player.CheckLayer("LeftHand"):
+                if Player.GetItemOnLayer("LeftHand").ItemID != weapon.ItemID:
                     unequip_hands()
-            elif Player.CheckLayer("LeftHand"):
-                if Player.GetItemOnLayer("LeftHand").ItemID != shield.ItemID:
-                    unequip_hands()
+            # elif Player.CheckLayer("RightHand"):
+            #     if Player.GetItemOnLayer("RightHand").ItemID != weapon.ItemID:
+            #         unequip_hands()
 
-            if not Player.CheckLayer("RightHand"):
-                equip_left_hand(weapon, 300 + shardLatency)
+            # if not Player.CheckLayer("RightHand"):
+            #     equip_left_hand(weapon, 300 + shardLatency)
 
             if not Player.CheckLayer("LeftHand"):
-                equip_left_hand(shield, 0 + shardLatency)
+                equip_left_hand(weapon, 0 + shardLatency)
 
         Player.Attack(enemy)
+        Player.AttackLast()
 
         # main loop
         while not Player.IsGhost:
@@ -79,15 +82,29 @@ def PhysicalAttack(enemySerial=-1):
             # check hp
             hp_diff = Player.HitsMax - Player.Hits
 
-            if 0 < hp_diff >= 60:
-                Player.HeadMessage(colors["alert"], "[hp]")
-                break
+            # use bandage
+            if (
+                (0 < hp_diff > 1 or Player.Poisoned)
+                and Timer.Check("bandage_cd") is False
+                and Timer.Check("cast_cd") is False
+            ):
+                if Target.HasTarget():
+                    Target.Cancel()
+                Items.UseItem(bandages)
+                Target.WaitForTarget(300, False)
+                Target.Self()
+                Timer.Create("bandage_cd", 3000 + shardLatency)
+                if Target.HasTarget():
+                    Target.Cancel()
+                    if 0 < hp_diff >= 60:
+                        Player.HeadMessage(colors["alert"], "[hp]")
+                        break
 
             # enemy checks
             if enemy.IsGhost or enemy.Deleted:
                 Player.HeadMessage(colors["debug"], "[enemy dead]")
                 break
-            elif Player.InRangeMobile(enemy, 7) is False:
+            elif Player.InRangeMobile(enemy, 8) is False:
                 Player.HeadMessage(colors["debug"], "[enemy range]")
                 break
             elif Journal.Search("Target cannot be seen."):

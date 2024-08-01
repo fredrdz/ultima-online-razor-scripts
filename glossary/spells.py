@@ -464,7 +464,7 @@ spells = {
     ),
     # Eighth Circle
     "Earthquake": SpellInfo(
-        "Earthquake", 8, spellReagents["Earthquake"], 50, 81.0, 2.25, 2250, 50, 2250
+        "Earthquake", 8, spellReagents["Earthquake"], 50, 81.0, 2.25, 4000, 50, 3000
     ),
     "Energy Vortex": SpellInfo(
         "Energy Vortex",

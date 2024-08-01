@@ -322,15 +322,7 @@ def CastSpellRepeatably(spellName="", enemySerial=-1, casts=-1):
                 CastSpellOnSelf("Magic Reflection", 0, scroll)
                 Timer.Create("cast_cd", spellDelay + config.shardLatency)
                 Misc.SetSharedValue("spell", "Lightning")
-                # toss an explosion potion
-                if explo_pot:
-                    if Timer.Check("explo_pot_cd") is False:
-                        Items.UseItem(explo_pot)
-                        Target.WaitForTarget(1000, False)
-                        Misc.Pause(2100)
-                        Target.TargetExecute(enemy)
-                        Player.HeadMessage(colors["debug"], "[explo toss]")
-                        Timer.Create("explo_pot_cd", 12000)
+                ExplosionPotion(enemy)
                 continue
             # actual spell cast
             if Target.HasTarget():
@@ -349,17 +341,22 @@ def CastSpellRepeatably(spellName="", enemySerial=-1, casts=-1):
                 Misc.SetSharedValue("spell", "Lightning")
             elif spellName == "Paralyze":
                 Misc.SetSharedValue("spell", "Flamestrike")
+                ExplosionPotion(enemy)
             elif spellName == "Weaken":
                 Misc.SetSharedValue("spell", "Feeblemind")
             elif spellName == "Feeblemind":
                 Misc.SetSharedValue("spell", "Clumsy")
             elif spellName == "Clumsy":
-                Misc.SetSharedValue("spell", "Poison")
+                Misc.SetSharedValue("spell", "Earthquake")
+            elif spellName == "Earthquake":
+                Misc.SetSharedValue("spell", "Flamestrike")
+                ExplosionPotion(enemy)
             elif spellName == "Poison":
-                Misc.SetSharedValue("spell", "Lightning")
-            elif spellName == "Lightning":
                 if enemy.Poisoned:
                     Misc.SetSharedValue("spell", "Flamestrike")
+                Misc.SetSharedValue("spell", "Lightning")
+            elif spellName == "Lightning":
+                Misc.SetSharedValue("spell", "Poison")
             ## debug ##
             # Sound.Log(True)
             # sounds = List[Int32]([249])  # meditation sound
@@ -371,3 +368,45 @@ def CastSpellRepeatably(spellName="", enemySerial=-1, casts=-1):
     # back to defense script
     Misc.SetSharedValue("spell", "")
     return Timer.Remaining("cast_cd")
+
+
+def ExplosionPotion(target):
+    """
+    Tosses an explosion potion at the target
+    """
+    # init
+    if not target:
+        return False
+    else:
+        enemy = target
+
+    # toss an explosion potion
+    if Timer.Check("explo_pot_cd") is False:
+        # find items
+        explo_pot = FindItem(
+            potions["greater explosion potion"].itemID, Player.Backpack
+        )
+        if explo_pot:
+            Items.UseItem(explo_pot)
+            Target.WaitForTarget(1000, False)
+            Misc.Pause(2200)
+            Target.TargetExecute(enemy)
+            Player.HeadMessage(colors["debug"], "[explo toss]")
+            Timer.Create("explo_pot_cd", 11000 + config.shardLatency)
+            return True
+    return False
+
+
+def ManaPotion():
+    """
+    Uses a greater mana potion
+    """
+    # use mana pot
+    if Timer.Check("pot_cd") is False:
+        mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
+        if mana_pot:
+            Items.UseItem(mana_pot)
+            Timer.Create("pot_cd", 11000 + config.shardLatency)
+            Player.HeadMessage(colors["status"], "[gmana pot]")
+            return True
+    return False

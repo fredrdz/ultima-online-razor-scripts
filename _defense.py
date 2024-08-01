@@ -22,11 +22,6 @@ from glossary.colors import colors
 # ---------------------------------------------------------------------
 # init
 
-# set shared values based on player name
-str = Misc.ReadSharedValue("str")
-dex = Misc.ReadSharedValue("dex")
-int = Misc.ReadSharedValue("int")
-
 # clear shared spell
 Misc.SetSharedValue("spell", "")
 
@@ -37,7 +32,7 @@ physical_attack = False
 
 # find items
 bandages = FindBandage(Player.Backpack)
-shield = FindItem(0x1B74, Player.Backpack)
+shield = FindItem(0x1B76, Player.Backpack)
 cure_pot = FindItem(potions["cure potion"].itemID, Player.Backpack)
 mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
 heal_pot = FindItem(potions["greater heal potion"].itemID, Player.Backpack)
@@ -59,9 +54,9 @@ while not Player.IsGhost:
     # check for poison
     if Player.Poisoned:
         if Timer.Check("cast_cd") is False:
-            Player.HeadMessage(colors["alert"], "[poisoned]")
+            Player.HeadMessage(colors["alert"], "[poison]")
             # find cure method
-            if Player.Mana >= spells["Cure"].manaCost and CheckReagents("Cure"):
+            if Player.Mana > spells["Cure"].manaCost and CheckReagents("Cure"):
                 if Target.HasTarget():
                     Target.Cancel()
                 CastSpellOnSelf("Cure", 100)
@@ -81,36 +76,38 @@ while not Player.IsGhost:
         if Target.HasTarget():
             Target.Cancel()
         Items.UseItem(bandages)
-        Target.WaitForTarget(200, False)
+        Target.WaitForTarget(300, False)
         Target.Self()
-        Timer.Create("bandage_cd", 2350 + shardLatency)
+        Timer.Create("bandage_cd", 3000 + shardLatency)
+        if Target.HasTarget():
+            Target.Cancel()
 
     # check pots
     if Player.WarMode is True:
         if Timer.Check("pot_cd") is False:
             # heal pots
-            if 0 < hp_diff >= 110:
+            if 0 < hp_diff > 110:
                 if heal_pot:
                     Items.UseItem(heal_pot)
                     Timer.Create("pot_cd", 500)
             # mana pots
-            elif 0 < mp_diff >= 40:
+            elif 0 < mp_diff > 40:
                 if mana_pot:
                     Items.UseItem(mana_pot)
                     Timer.Create("pot_cd", 500)
 
     # check hp
-    if 0 < hp_diff >= 90:
-        if Player.Mana >= spells["Heal"].manaCost and Timer.Check("cast_cd") is False:
+    if 0 < hp_diff >= 100:
+        if Player.Mana > spells["Heal"].manaCost and Timer.Check("cast_cd") is False:
             if CheckReagents("Heal"):
                 if Target.HasTarget():
                     Target.Cancel()
                 CastSpellOnSelf("Heal", 100)
                 Timer.Create("cast_cd", spells["Heal"].delayInMs + shardLatency)
                 continue
-    elif 0 < hp_diff >= 60:
+    elif 0 < hp_diff >= 50:
         if (
-            Player.Mana >= spells["Greater Heal"].manaCost
+            Player.Mana > spells["Greater Heal"].manaCost
             and Timer.Check("cast_cd") is False
         ):
             if CheckReagents("Greater Heal"):
@@ -122,66 +119,48 @@ while not Player.IsGhost:
                 )
                 Timer.Create("cast_cd", spells["Greater Heal"].delayInMs + shardLatency)
                 continue
-    elif 0 < hp_diff >= 50:
-        continue
 
     # check for paralysis
     if Journal.SearchByType("You cannot move!", "System"):
         if Timer.Check("cast_cd") is False:
             Player.HeadMessage(colors["alert"], "[paralyzed]")
-            if Player.Mana >= spells["Magic Arrow"].manaCost and CheckReagents(
+            if Player.Mana > spells["Magic Arrow"].manaCost and CheckReagents(
                 "Magic Arrow"
             ):
                 Journal.Clear()
                 CastSpellOnSelf("Magic Arrow")
                 continue
 
-    # check for curse
-    if Player.WarMode is True:
-        if Player.Str < str or Player.Dex < dex or Player.Int < int:
-            if (
-                Timer.Check("cast_cd") is False
-                and Player.Mana >= spells["Bless"].manaCost
-                and CheckReagents("Bless")
-            ):
-                Player.HeadMessage(colors["alert"], "[cursed]")
-                # bless buff lasts about 3 mins
-                CastSpellOnSelf("Bless", 100)
-                Timer.Create("cast_cd", spells["Bless"].delayInMs + shardLatency)
-                continue
-
-    # check bless
-    # wip
-
     # set attack target
     if enemy <= 0:
         enemy = Misc.ReadSharedValue("kill_target")
 
     if enemy >= 0:
-        if hp_diff <= 50:
-            # physical attack
-            physical_attack = Misc.ReadSharedValue("physical_attack")
-            if physical_attack:
-                Player.HeadMessage(colors["status"], "[weapon]")
-                PhysicalAttack(enemy)
-                # defend
-                Player.HeadMessage(colors["status"], "[defend]")
-                physical_attack = False
-                enemy = -1
-                continue
+        if hp_diff <= 60:
+            if Timer.Check("cast_cd") is False:
+                # physical attack
+                physical_attack = Misc.ReadSharedValue("physical_attack")
+                if physical_attack:
+                    Player.HeadMessage(colors["status"], "[weapon]")
+                    PhysicalAttack(enemy)
+                    # defend
+                    Player.HeadMessage(colors["status"], "[defend]")
+                    physical_attack = False
+                    enemy = -1
+                    continue
 
-            # magic attack
-            spell = Misc.ReadSharedValue("spell")
-            if spell:
-                Player.HeadMessage(colors["status"], "[magic]")
-                remaining = CastSpellRepeatably("spell", enemy)
-                if remaining > 0:
-                    Timer.Create("cast_cd", remaining)
-                # defend
-                Player.HeadMessage(colors["status"], "[defend]")
-                spell = ""
-                enemy = -1
-                continue
+                # magic attack
+                spell = Misc.ReadSharedValue("spell")
+                if spell:
+                    Player.HeadMessage(colors["status"], "[magic]")
+                    remaining = CastSpellRepeatably("spell", enemy)
+                    if remaining > 0:
+                        Timer.Create("cast_cd", remaining)
+                    # defend
+                    Player.HeadMessage(colors["status"], "[defend]")
+                    spell = ""
+                    enemy = -1
+                    continue
 
     # equip shield (kite)
     if shield:

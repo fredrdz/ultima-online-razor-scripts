@@ -8,7 +8,13 @@ from glossary.colors import colors
 from glossary.spells import spells
 from glossary.items.potions import potions
 from glossary.items.scrolls import mageryScrolls
-from utils.magery import Meditation, CastSpellOnSelf, CheckReagents, FindScrollBySpell
+from utils.magery import (
+    Meditation,
+    CastSpellOnSelf,
+    CastSpellOnTarget,
+    CheckReagents,
+    FindScrollBySpell,
+)
 from utils.items import FindItem, FindNumberOfItems
 
 """
@@ -31,12 +37,17 @@ if target:
         ">> debug target",
     )
 
+    # test mobile targeted funcs here
+    ######
+
+    CastSpellOnTarget(target, "Magic Arrow")
+
+    sys.exit()
+    # unused code below for reference
+
     # find items
     gheal_scroll = FindScrollBySpell("Greater Heal")
     explo_pot = FindItem(potions["greater explosion potion"].itemID, Player.Backpack)
-
-    # test mobile targeted funcs here
-    ######
 
     # toss an explosion potion
     for _ in range(3):
@@ -48,16 +59,14 @@ if target:
             Target.TargetExecute(target)
             Misc.Pause(12000)
 
-    sys.exit()
-    # unused code below for reference
-
-    spell = "Greater Heal"
-    for _ in range(3):
+    # spell testing
+    spell = "Earthquake"
+    for _ in range(1):
         # CastSpellOnTarget(target, spell)
         CastSpellOnSelf(
-            "Greater Heal",
+            "Earthquake",
             0,
             # gheal_scroll,
         )
-        # Misc.Pause(spells["Greater Heal"].scrollDelay + shardLatency)
-        Misc.Pause(spells["Greater Heal"].delayInMs + shardLatency)
+        # Misc.Pause(spells[].scrollDelay + shardLatency)
+        Misc.Pause(spells["Earthquake"].delayInMs + shardLatency)
