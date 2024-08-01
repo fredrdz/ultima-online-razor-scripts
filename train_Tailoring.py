@@ -1,19 +1,19 @@
 """
-SCRIPT: train_Alchemy.py
+SCRIPT: train_Tailoring.py
 Author: Talik Starr
 IN:RISEN
-Skill: Alchemy
+Skill: Tailoring
 """
 
 # custom RE packages
 import Items, Player, Misc, Target
-from glossary.crafting.alchemy import (
-    alchName,
-    alchGump,
-    alchTools,
-    alchCraftables,
+from glossary.crafting.tailoring import (
+    clothing,
+    tailName,
+    tailGump,
+    tailTools,
+    tailCraftables,
 )
-from glossary.items.potions import potions
 from glossary.colors import colors
 from utils.crafting import TrainCraftSkill
 from utils.items import EnableSellingAgent
@@ -50,9 +50,7 @@ containerInBank = 0x40054709
 # a list of tuples containing itemID and count
 depositItems = [
     (0x0EED, -1),  # gold
-    (potions["greater mana potion"].itemID, -1),
-    (potions["lesser poison potion"].itemID, -1),
-    (potions["deadly poison potion"].itemID, -1),
+    (clothing["skullcap"].itemID, -1),  # skullcap
 ]
 
 # ---------------------------------------------------------------------
@@ -66,7 +64,8 @@ if Misc.CheckSharedValue("young_runebook"):
     runebook_serial = Misc.ReadSharedValue("young_runebook")
 else:
     runebook_serial = Target.PromptTarget(
-        ">> target the runebook with th bank, house, and vendor rune", colors["notice"]
+        ">> Select the runebook with the bank, house, and vendor rune:",
+        colors["notice"],
     )
 
 # check what type of restock container we're using;
@@ -116,21 +115,20 @@ craftConfig = {
     "vendorName": vendorName,
     "vendorPosition": (sellX, sellY),
     # skill settings
-    "skillName": alchName,
-    "skillGump": alchGump,
-    "skillTools": alchTools,
-    "skillCraftables": alchCraftables,
+    "skillName": tailName,
+    "skillGump": tailGump,
+    "skillTools": tailTools,
+    "skillCraftables": tailCraftables,
     # skill path to use: "skill" or "profit"
-    "usePath": "profit",
+    "usePath": "skill",
     # a dictionary of skill paths and their values
     # define what item names to craft and up to which maximum skill value
     "paths": {
         "skill": {
-            "lesser poison": 100.0,
+            "skullcap": 100.0,
         },
         "profit": {
-            "greater mana": 100.0,
-            # "deadly poison": 120.0,
+            "skullcap": 100.0,
         },
     },
 }
@@ -138,11 +136,11 @@ craftConfig = {
 
 # ---------------------------------------------------------------------
 # script functions
-def TrainAlchemySkill(
+def TrainTailoringSkill(
     craftConfig={},
 ):
     """
-    Trains Alchemy skill to its skill cap
+    Trains Tailoring skill to its skill cap
     """
     TrainCraftSkill(craftConfig)
     return
@@ -151,5 +149,5 @@ def TrainAlchemySkill(
 # ---------------------------------------------------------------------
 # main script process
 
-EnableSellingAgent("alchemy")
-TrainAlchemySkill(craftConfig)
+EnableSellingAgent("tailoring")
+TrainTailoringSkill(craftConfig)

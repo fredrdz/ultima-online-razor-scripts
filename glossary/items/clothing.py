@@ -116,9 +116,6 @@ clothing = {
     "half apron": myItem(
         name="half apron", itemID=0x153B, color=0x0000, category="clothing", weight=2
     ),
-    "full apron": myItem(
-        name="full apron", itemID=0x153D, color=0x0000, category="clothing", weight=4
-    ),
     "oil cloth": myItem(
         name="oil cloth", itemID=0x175D, color=0x0363, category="clothing", weight=2
     ),
@@ -181,5 +178,4 @@ clothingInTreasureChests = {
     "tricorne hat": clothing["tricorne hat"],
     "wide-brim hat": clothing["wide-brim hat"],
     "wizard's hat": clothing["wizard's hat"],
-    "bandana": clothing["bandana"],
 }

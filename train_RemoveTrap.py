@@ -14,6 +14,8 @@ from glossary.items.potions import potions
 from utils.items import FindItem, FindNumberOfItems, MoveItemsByCount
 
 # ---------------------------------------------------------------------
+stop_if_gm = False
+
 # init
 skillName = "Remove Trap"
 poisonBottle = potions["lesser poison potion"]
@@ -69,7 +71,10 @@ def TrainRemoveTrap(trapTarget, restockContainer):
         Misc.Pause(100)
 
         # stop loop if gm
-        if Player.GetRealSkillValue(skillName) == Player.GetSkillCap(skillName):
+        if (
+            Player.GetRealSkillValue(skillName) == Player.GetSkillCap(skillName)
+            and stop_if_gm
+        ):
             Misc.SendMessage(f">> {skillName} training complete!", colors["success"])
             break
 

@@ -1,6 +1,7 @@
 from utils.items import myItem
 
 cloth = {
+    "folded cloth": myItem("folded cloth", 0x175D, 0x0000, "tailoring", 1),
     "cut cloth": myItem("cut cloth", 0x1767, 0x07C2, "tailoring", 10),
     "pile of folded besotted cloth": myItem(
         "pile of folded besotted cloth", 0x1766, 0x0000, "tailoring", 1
