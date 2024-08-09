@@ -14,6 +14,7 @@ from glossary.crafting.fletching import (
     fletchCraftables,
 )
 from glossary.colors import colors
+from glossary.items.miscellaneous import miscellaneous
 from utils.crafting import TrainCraftSkill
 from utils.items import EnableSellingAgent
 
@@ -48,8 +49,11 @@ containerInBank = 0x40054709
 # items to deposit in bank bag or secure container
 # a list of tuples containing itemID and count
 depositItems = [
-    (0x0EED, -1),  # gold
-    (0x0DE1, -1),  # kindling
+    (miscellaneous["gold coin"].itemID, -1),
+    (miscellaneous["kindling"].itemID, -1),
+    (miscellaneous["shaft"].itemID, -1),
+    (miscellaneous["arrow"].itemID, -1),
+    (miscellaneous["crossbow bolt"].itemID, -1),
 ]
 
 # ---------------------------------------------------------------------
@@ -122,7 +126,11 @@ craftConfig = {
     # a dictionary of skill paths and their values
     # define what item names to craft and up to which maximum skill value
     "paths": {
-        "skill": {"kindling": 100.0},
+        "skill": {
+            "kindling": 100.0,
+            "arrow": 120.0,
+            # "shaft": 120.0,
+        },
         "profit": {
             "bow": 60.0,
             "crossbow": 80.0,

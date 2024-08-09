@@ -22,7 +22,7 @@ fletchCraftables = {
     ),
     "shaft": Craftable(
         Name="shaft",
-        Item=None,
+        Item=miscellaneous["shaft"],
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},
@@ -32,20 +32,20 @@ fletchCraftables = {
     ### Ammunition: Gump Button 8 ###
     "arrow": Craftable(
         Name="arrow",
-        Item=None,
+        Item=miscellaneous["arrow"],
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},
-        ResourcesNeeded={miscellaneous["arrow shaft"]: 1, miscellaneous["feather"]: 1},
+        ResourcesNeeded={miscellaneous["shaft"]: 1, miscellaneous["feather"]: 1},
         GumpPath=(GumpSelection(fletchGump, 8), GumpSelection(fletchGump, 2)),
     ),
     "crossbow bolt": Craftable(
         Name="crossbow bolt",
-        Item=None,
+        Item=miscellaneous["crossbow bolt"],
         RetainsMark=False,
         RetainsColor=False,
         MinSkill={"fletching": 0.0},
-        ResourcesNeeded={miscellaneous["arrow shaft"]: 1, miscellaneous["feather"]: 1},
+        ResourcesNeeded={miscellaneous["shaft"]: 1, miscellaneous["feather"]: 1},
         GumpPath=(GumpSelection(fletchGump, 8), GumpSelection(fletchGump, 9)),
     ),
     ### Weapons: Gump Button 15 ###

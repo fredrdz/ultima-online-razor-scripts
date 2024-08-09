@@ -12,7 +12,7 @@ miscellaneous = {
         name="blank scroll", itemID=0x0EF3, color=0x0000, category="generic", weight=0.1
     ),
     "gold coin": myItem(
-        name="gold coin", itemID=0x0EED, color=0x0000, category="generic", weight=0.02
+        name="gold coin", itemID=0x0EED, color=0x0000, category="generic", weight=0
     ),
     "map": myItem(
         name="map", itemID=0x14EC, color=0x0000, category="generic", weight=1
@@ -50,6 +50,7 @@ miscellaneous = {
         category="generic",
         weight=1,
     ),
+    # fletching
     "kindling": myItem(
         name="kindling",
         itemID=0x0DE1,
@@ -57,9 +58,9 @@ miscellaneous = {
         category="generic",
         weight=1,
     ),
-    "arrow shaft": myItem(
-        name="arrow shaft",
-        itemID=0x0000,
+    "shaft": myItem(
+        name="shaft",
+        itemID=0x1BD4,
         color=0x0000,
         category="generic",
         weight=1,
@@ -71,6 +72,21 @@ miscellaneous = {
         category="generic",
         weight=1,
     ),
+    "arrow": myItem(
+        name="arrow",
+        itemID=0x0F3F,
+        color=0x0000,
+        category="generic",
+        weight=1,
+    ),
+    "crossbow bolt": myItem(
+        name="crossbow bolt",
+        itemID=0x1BFB,
+        color=0x0000,
+        category="generic",
+        weight=1,
+    ),
+    # alchemy
     "empty bottle": myItem(
         name="empty bottle",
         itemID=0x0F0E,

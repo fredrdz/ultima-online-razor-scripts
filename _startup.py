@@ -11,6 +11,7 @@ if Player.Name == "Talik Starr":
     Misc.SetSharedValue("young_runebook", 0x4003B289)
     Misc.SetSharedValue("daily_runebook", 0x4012101D)
     Misc.SetSharedValue("lj_runebook", 0x40121041)
+    Misc.SetSharedValue("mining_runebook", 0x40121041)
     # misc
     Misc.SetSharedValue("spell", "")
     Misc.SetSharedValue("physical_attack", False)
