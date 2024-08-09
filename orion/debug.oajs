@@ -1,0 +1,233 @@
+var config = {
+  "alertWavFile": 'D:\\uo\\alert.wav', // path of the alert wav file to play for notifications
+  "maxWeight": Player.MaxWeight(), // max weight used for smelting and determining if deposit is required
+  "maxForgeScanDistance": 20, // how far to scan around the player for smelting forge
+  "mineScanRadius": 10, // how far to scan around the player for mining cave tiles
+  "bankCoordinates": { x: 2557, y: 514, z: 16 }, // XYZ coordinates of where to say "bank" or open bank box
+  "bankSerial": Player.BankSerial(), // requires client to see bank at least once during session
+  "bankBoxSerial": 0x40044E51, // if set, will open box before deposit, otherwise will say "bank" first
+  "containerSerial": 0x40075182, // item serial of ore deposit container
+  "runebookSerial": 0x40074FA4 // item serial of the runebook that will be used for travel
+};
+
+function init() {
+  Orion.Print(">> initializing...");
+  Orion.ClearJournal();
+  if (Player.WarMode()) {
+    Orion.WarMode(false);
+  }
+}
+
+function afkGumpCheck() {
+   while (isAfkGump()) {
+    Orion.Print(">> alert: afk gump detected");
+    //alertSound()
+    Orion.Wait(10000);
+  }
+}
+
+function isAfkGump() {
+  if (Orion.GumpExists('generic', 'any', '408109089')) {
+    return true;
+  }
+  return false;
+}
+
+function alertSound() {
+  Orion.PlayWav(config.alertWavFile)
+}
+
+function depositIngots(containerSerial) {
+  Orion.Print(">> depositing ingots...");
+  Orion.UseObject(containerSerial);
+  Orion.Wait(1000);
+  
+  // move all mined ore to the container
+  ores = Orion.FindTypeEx('0x1BEF', 'any', 'backpack');
+  for (var i = 0; i < ores.length; i++) {
+  	Orion.MoveItem(ores[i].Serial(), ores[i].Count(), containerSerial);
+  	Orion.Wait(1000);
+  }
+}
+
+function bank(x, y, z, containerSerial, bankBoxSerial) {
+  Orion.WalkTo(x, y, z, 0, 50, 1, 0, Orion.Now()+10000);
+  
+  // open bank box if a serial was given otherwise say "bank"
+  if (bankBoxSerial) {
+    Orion.UseObject(bankBoxSerial);
+    Orion.Wait(1000);
+  } else {
+    Orion.Say('bank');
+    Orion.Wait(1000);
+  }
+  
+  // if bank open, deposit items into containerSerial
+  var bankSerial = Player.BankSerial()
+  if (Orion.FindObject(bankSerial)) {
+    depositIngots(containerSerial);
+  } else {
+    Orion.Print(">> failed to deposit into container");
+  }
+}
+
+function isOverWeight() {
+  return Player.Weight() >= config.maxWeight;
+}
+
+function findTool() {
+  // if mining tools are found in the backpack, return the first tool
+  var tools = Orion.FindTypeEx('0x0F39|0x0E86', 'any', 'backpack', 'fast');
+  if (tools.length > 0) {
+    return tools[0];
+  }
+  
+  // check if holding a pickaxe in hands
+  var rightHand = Orion.ObjAtLayer('RightHand');
+
+  if (rightHand && (rightHand.Graphic() == '0x0E86')) {
+    return rightHand;
+  }
+  
+  // if here, no tools were found
+  return null;
+}
+
+function findForge(radius) {
+  var forges = Orion.FindTypeEx('0x0FB1|0x197E|0x199E|0x19A2|0x197A', 'any', 'ground', 'fast', radius);
+  return forges.length > 0 ? forges[0] : null;
+}
+
+function scanCave(radius) {
+  Orion.Print(">> scanning for cave tiles...")
+  
+  // player's current coordinates
+  var playerX = Player.X();
+  var playerY = Player.Y();
+  var playerZ = Player.Z();
+  
+  // set search area
+  var startX = playerX - radius;
+  var startY = playerY - radius;
+  var endX = playerX + radius;
+  var endY = playerY + radius;
+  
+  // get tiles in specified rectangle
+  var tiles = Orion.GetTilesInRect('mine', startX, startY, playerZ, endX, endY, 0);
+    
+  return tiles;
+}
+
+function smelt(x, y, z) {
+  Orion.Print(">> smelting ore...");
+  
+  if (Orion.WalkTo(x, y, z, 3, 5, 1, 0, Orion.Now()+10000)) {
+  	var ores = Orion.FindTypeEx('0x19B9|0x19B7|0x19BA|0x19B8', 'any', 'backpack');
+   // check if ores left
+   if (ores.length === 0) {
+     Orion.Print(">> no ores left to smelt");
+     return; // ends recursion
+   }
+   // smelt
+  	for (var i = 0; i < ores.length; i++) {
+  		Orion.UseObject(ores[i].Serial());
+  		Orion.Wait(550);
+  	}
+   // recursion
+   smelt(x, y, z);
+  }
+}
+
+function mine(toolSerial, x, y, z) {
+  // mining loops while not overweight
+  while (!isOverWeight()) {
+    // check if we got afk gump'd
+    afkGumpCheck();
+    
+    // clear target cursor if open
+    if (Orion.HaveTarget()) {
+      Orion.CancelTarget();
+    }
+    // mine
+    Orion.UseObject(toolSerial);
+    Orion.WaitForTarget();
+    Orion.TargetTile('mine', x, y, z);
+   
+    // set current time for the start of the wait
+    var startTime = Orion.Now();
+  
+    // patterns to wait for in journal
+    var success = "You dig some";
+    var fail = "You loosen some";
+    var nothing = "There is no metal";
+    var error1 = "too far away";
+    
+    // concat above strings
+    var messagePatterns = (success+"|"+fail+"|"+nothing+"|"+error1);
+  
+    // wait for any of the relevant messages to appear in the journal
+    var message = Orion.WaitJournal(messagePatterns, startTime, Orion.Now()+10000, 'system');
+  
+    // check result of mining attempt
+    if (message) {
+      if (message.Text().indexOf(success) !== -1) {
+        continue
+      } else if (message.Text().indexOf(fail) !== -1) {
+        continue
+      }
+    }
+    
+    // if here, there was an error or we are done
+    break
+  }
+  
+  // cleanup
+  Orion.ClearJournal(messagePatterns, 'system')
+}
+
+// main process
+function main() {
+  while (!Player.Dead()) {
+    var caveTiles = scanCave(config.mineScanRadius);
+    var tool = findTool();
+    
+    if (caveTiles.length == 0) {
+      Orion.Print(">> no usable cave tiles found");
+      Orion.Wait(10000);
+    }
+    
+    if (tool == null) {
+      Orion.Print(">> no tool found");
+      return;
+    }
+    
+    for (var i = 0; i < caveTiles.length; i++) {
+      var caveX = caveTiles[i].X()
+      var caveY = caveTiles[i].Y()
+      var caveZ = caveTiles[i].Z()
+      
+      Orion.WalkTo(caveX, caveY, caveZ, 2, 5, 1, 0, Orion.Now()+10000);
+      mine(tool.Serial(), caveX, caveY, caveZ);
+    
+      if (isOverWeight()) {
+        var forge = findForge(config.maxForgeScanDistance);
+        if (forge) {
+          smelt(forge.X(), forge.Y(), forge.Z());
+        }
+        if (isOverWeight()) {
+          Orion.Print(">> max weight w/ ingots reached")
+          bank(
+            config.bankCoordinates.x,
+            config.bankCoordinates.y,
+            config.bankCoordinates.z,
+            config.containerSerial,
+            config.bankBoxSerial
+          )
+        }
+      }
+    }
+  }
+}
+
+// start script
+main();

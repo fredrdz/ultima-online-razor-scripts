@@ -1,0 +1,215 @@
+// IN:Risen
+// Author: Talik Starr
+// Skill: Mining
+// Description: Mines a cave until max player weight and recalls to a runebook location to drop off. Then proceeds to next runebook location to continue mining. Stops script when bank is full.
+
+var config = {
+  "maxWeight": Player.MaxWeight(), // max weight after smelting before deposit
+  "maxForgeScanDistance": 20, // how far to scan around the player for smelting forge
+  "maxMiningScanDistance": 3, // how far to scan around the player for cave tiles
+  "bankCoordinates": { x: 0, y: 0, z: 0 }, // XYZ coordinates of where to say "bank"
+  "secureContainer": 0x4000, // item serial of a house container; accessible from outside
+  "runebookSerial": 0x4001 // item serial of the runebook that will be used for travel
+};
+
+function init() {
+	Orion.Print(">> initializing...");
+
+	if (Player.WarMode())
+		Orion.WarMode(false);
+}
+
+function restock() {
+	// Ensure player has enough mining tools in their inventory
+	tools = Orion.FindTypeEx(config.miningTools, any, backpack, 'fast');
+	if (tools.length === 0) {
+		Orion.Print(">> No mining tools found, restocking...");
+		// Implement restock logic
+	}
+}
+
+function deposit() {
+	Orion.Print(">> Depositing items...");
+	Orion.UseObject(config.secureContainer);
+	Orion.Wait(1000);
+
+	// Move all mined ore to the container
+	ores = Orion.FindTypeEx(0x19B9, any, backpack, 'fast');
+	for (let i = 0; i < ores.length; i++) {
+		Orion.MoveItem(ores[i].Serial(), ores[i].Count(), config.secureContainer);
+		Orion.Wait(500);
+	}
+}
+
+function bank() {
+	Orion.Print(">> Banking items...");
+	Orion.WalkTo(config.bankCoordinates.x, config.bankCoordinates.y, config.bankCoordinates.z, 1, 255, 1, 1);
+	Orion.Say("bank");
+	Orion.Wait(1000);
+
+	// Move all mined ore to the bank
+	let ores = Orion.FindTypeEx(0x19B9, any, backpack, 'fast');
+	for (let i = 0; i < ores.length; i++) {
+		Orion.MoveItem(ores[i].Serial(), ores[i].Count(), 'bankbox');
+		Orion.Wait(500);
+	}
+}
+
+// ---------------------------------------------------------------
+// helper funcs
+
+function notifyPlayer() {
+	Orion.Print(">> Notification sent to player.");
+	// Implement notification logic (e.g., sound, message)
+}
+
+function checkRegs() {
+	Orion.Print(">> Checking reagents...");
+	// Implement reagent check logic
+}
+
+function recallSpell() {
+	Orion.Print(">> Casting recall spell...");
+	Orion.Cast('Recall');
+	Orion.Wait(2000);
+}
+
+function runebook() {
+	Orion.Print(">> Using runebook...");
+	runebook = Orion.FindObject(config.runebookSerial);
+	if (runebook) {
+		Orion.UseObject(runebook.Serial());
+		Orion.Wait(1000);
+	}
+}
+
+function findTool() {
+  var tools = Orion.FindTypeEx('0x0F39|0x0E86', 'any', 'backpack', 'fast');
+  return tools.length > 0 ? tools[0] : null;
+}
+
+function findForge() {
+  var forges = Orion.FindTypeEx('0x0FB1', 'any', 'ground', 'fast', config.maxForgeScanDistance);
+  return forges.length > 0 ? forges[0] : null;
+}
+
+// ---------------------------------------------------------------
+// core funcs
+
+function scanCave() {  
+  // Get player's current coordinates
+  var playerX = Player.X();
+  var playerY = Player.Y();
+  var playerZ = Player.Z();
+  
+  // Define the search area
+  var startX = playerX - config.maxMiningScanDistance;
+  var startY = playerY - config.maxMiningScanDistance;
+  var endX = playerX + config.maxMiningScanDistance;
+  var endY = playerY + config.maxMiningScanDistance;
+  
+  // Get the tiles in the specified rectangle
+  var tiles = Orion.GetTilesInRect('mine', startX, startY, playerZ, endX, endY, 0);
+  
+  return tiles;
+}
+
+function mine(toolSerial, x, y, z) {
+  while (true) {
+    Orion.UseObject(toolSerial);
+    Orion.WaitForTarget();
+    Orion.TargetTile('mine', x, y, z);
+   
+    // Get current time for the start of the wait
+    var startTime = Orion.Now();
+  
+    // Patterns to wait for in journal
+    var success = "You dig some";
+    var fail = "You can't mine there";
+    var nothing = "There is nothing here";
+    
+    // Concat above strings
+    var messagePatterns = success + "|" + fail + "|" + nothing
+  
+    // Wait for any of the relevant messages to appear in the journal
+    var message = Orion.WaitJournal(messagePatterns, startTime, 10000, 'system');
+  
+    // Check result of the mining attempt
+    if (message) {
+      if (message.Text().indexOf(success) !== -1) {
+        continue
+      } else if (message.Text().indexOf(fail) !== -1) {
+        continue
+      } else if (message.Text().indexOf(nothing) !== -1) {
+        break
+      } else {
+        break
+      }
+    }
+  }
+}
+
+function smelt(x, y, z) {
+	Orion.Print(">> Smelting ore...");
+	if (Orion.WalkTo(x, y, z, 2, 5, 1, 0, 10000)) {
+  	var ores = Orion.FindTypeEx('0x19B9', 'any', 'backpack', 'fast');
+  	for (let i = 0; i < ores.length; i++) {
+  		Orion.UseObject(ores[i].Serial());
+  		Orion.Wait(500);
+  	}
+ }
+}
+
+function mine() {
+  var caveTiles = scanCave();
+  var tool = findTool();
+  
+  if (caveTiles.length == 0) {
+    Orion.Print(">> No cave tiles found");
+    return;
+  }
+  
+  if (tool == null) {
+    Orion.Print(">> No tool found");
+    return;
+  }
+    
+  Orion.Print("Using tool: " + tool.Serial());
+  
+  for (var i = 0; i < caveTiles.length; i++) {
+    Orion.WalkTo(caveTiles[i].X(), caveTiles[i].Y(), caveTiles[i].Z(), 1, 255, 1, 1);
+    Orion.UseObject(tool.Serial());
+    Orion.Wait(1000);
+    Orion.TargetTile('mine', caveTiles[i].X(), caveTiles[i].Y(), caveTiles[i].Z());
+    Orion.Wait(1000);
+  
+    if (Player.Weight() >= config.maxWeight) {
+      var forge = findForge();
+      if (forge) {
+        smelt(forge.X(), forge.Y(), forge.Z());
+      } else {
+        notifyPlayer();
+        return;
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------
+// main
+
+function main() {
+  init();
+  
+  while (true) {
+  	mine();
+  	if (Player.Weight() >= config.maxWeight) {
+  		recallSpell();
+  		deposit();
+  	}
+  	Orion.Wait(1000);
+  }
+}
+
+// run script
+main();
