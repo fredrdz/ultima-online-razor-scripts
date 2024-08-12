@@ -88,32 +88,28 @@ def use_runebook(runebook_serial, slot_number=1):
     Gumps.CloseGump(runebook.Id)
 
 
-def RecallNext(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16) -> int:
-    # calculates the next tree_rune, wrapping around if it exceeds MAX_TREE_RUNE
-    next_tree_rune = MIN_TREE_RUNE + (tree_rune + 1 - MIN_TREE_RUNE) % (
-        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
-    )
+def RecallNext(runebook, RUNE=1, MIN_RUNE=1, MAX_RUNE=16) -> int:
+    # calculates the next RUNE, wrapping around if it exceeds MAX_RUNE
+    next_rune = MIN_RUNE + (RUNE + 1 - MIN_RUNE) % (MAX_RUNE - MIN_RUNE + 1)
     Misc.SendMessage(">> recalling to next zone", colors["notice"])
-    use_runebook(runebook, next_tree_rune)
+    use_runebook(runebook, next_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)
-    return next_tree_rune
+    return next_rune
 
 
-def RecallCurrent(runebook, tree_rune=1):
+def RecallCurrent(runebook, RUNE=1):
     Misc.SendMessage(">> recalling to current zone", colors["notice"])
-    use_runebook(runebook, tree_rune)
+    use_runebook(runebook, RUNE)
     Misc.Pause(config.recallDelay + config.shardLatency)
 
 
-def RecallPrevious(runebook, tree_rune=1, MIN_TREE_RUNE=1, MAX_TREE_RUNE=16) -> int:
-    # calculates the previous tree_rune, wrapping around if it goes below MIN_TREE_RUNE
-    previous_tree_rune = MAX_TREE_RUNE - (MAX_TREE_RUNE - tree_rune + 1) % (
-        MAX_TREE_RUNE - MIN_TREE_RUNE + 1
-    )
+def RecallPrevious(runebook, RUNE=1, MIN_RUNE=1, MAX_RUNE=16) -> int:
+    # calculates the previous RUNE, wrapping around if it goes below MIN_RUNE
+    previous_rune = MAX_RUNE - (MAX_RUNE - RUNE + 1) % (MAX_RUNE - MIN_RUNE + 1)
     Misc.SendMessage(">> recalling to previous zone", colors["notice"])
-    use_runebook(runebook, previous_tree_rune)
+    use_runebook(runebook, previous_rune)
     Misc.Pause(config.recallDelay + config.shardLatency)
-    return previous_tree_rune
+    return previous_rune
 
 
 def RecallBank(runebook, bank_rune=1):

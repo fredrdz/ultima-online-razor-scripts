@@ -218,9 +218,11 @@ def TrainCraftSkill(
             )
             return
 
-    while not Player.IsGhost and Player.GetRealSkillValue(
-        skillName
-    ) < Player.GetSkillCap(skillName):
+    while not Player.IsGhost:
+        # check if skill is maxed out
+        if Player.GetRealSkillValue(skillName) > Player.GetSkillCap(skillName):
+            break
+
         # make sure the tool isn't broken. If it is broken, this will return None
         tool = Items.FindBySerial(tool.Serial)
         if tool is None:
@@ -271,6 +273,15 @@ def TrainCraftSkill(
             )
 
         Items.UseItem(tool)
+        # dirty fix for tailoring
+        if tool.ItemID == 0x0F9D:  # sewing kit
+            Target.WaitForTarget(1000, False)
+            folded_cloth = FindItem(0x175D, Player.Backpack)
+            if folded_cloth:
+                Target.TargetExecute(folded_cloth)
+            else:
+                Misc.SendMessage(">> no folded cloth found", colors["fail"])
+                return
 
         # craft the item
         for path in craftable.GumpPath:
@@ -278,7 +289,7 @@ def TrainCraftSkill(
             Gumps.SendAction(path.GumpID, path.ButtonID)
 
         # wait for crafting to finish and close the gump
-        Gumps.WaitForGump(skillGump, 10000)
+        Gumps.WaitForGump(skillGump, 20000)
         Gumps.SendAction(skillGump, 0)
 
         itemCount = FindNumberOfItems(craftItemID, Player.Backpack)

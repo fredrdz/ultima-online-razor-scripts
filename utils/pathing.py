@@ -1,3 +1,7 @@
+# System packages
+import math
+
+# RE packages
 import Items, Mobiles, PathFinding, Player, Misc, Statics, Target
 from glossary.colors import colors
 
@@ -72,6 +76,11 @@ def PathCount(x, y=0, z=0) -> int:
     return Misc.Distance(pX, pY, tX, tY)
 
 
+def GetDistance(x1, y1, x2, y2):
+    # calculate Euclidean distance between two points
+    return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
+
+
 def PlayerDirectionOffset(x, y):
     player_position = Player.Position
     pX = player_position.X
@@ -94,11 +103,20 @@ def PlayerDirectionOffset(x, y):
     return tX, tY
 
 
-def PlayerDiagonalOffset(x=0, y=0):
+def PlayerDiagonalOffset(x=0, y=0, config=None):
+    player_position = Player.Position
+    pX = player_position.X
+    pY = player_position.Y
+
+    # get diagonal coordinates around the target position
     position_range = GetDiagonalCoordsOfPosition(x, y)
 
+    # sort the positions based on their distance to the player's current position
+    position_range.sort(key=lambda pos: GetDistance(pX, pY, pos[0], pos[1]))
+
+    # find the closest passable tile
     for pos in position_range:
-        if CheckTile(pos[0], pos[1]):
+        if CheckTile(pos[0], pos[1], config):
             return (pos[0], pos[1])
 
     return None
@@ -118,7 +136,7 @@ def GetDiagonalCoordsOfPosition(x=0, y=0):
 
 # ---------------------------------------------------------------------
 def CheckTile(tile_x, tile_y, config=None):
-    # Default config
+    # default config
     default_config = {
         "search_statics": True,  # look for blockable statics like trees, rocks (not blocked by sittable tree trunks) etc...
         "player_house_filter": True,  # avoid player houses - make this False if you need to use inside a large open player house room without walls
@@ -130,22 +148,22 @@ def CheckTile(tile_x, tile_y, config=None):
         },
     }
 
-    # Use default config if none or empty config is provided
+    # use default config if none or empty config is provided
     if not config:
         config = default_config
     else:
-        # Merge provided config with default config
+        # merge provided config with default config
         config = {**default_config, **config}
 
-    # Init
+    # init
     flag_name = "Impassable"
 
-    # Filter to get all items
+    # filter to get all items
     if config.get("items_filter", {}).get("Enabled"):
         items_filter = Items.Filter()
         items_filter.Enabled = True
         items = Items.ApplyFilter(items_filter)
-        # Check if any items are on the tile
+        # check if any items are on the tile
         for item in items:
             if (
                 item.Position.X == tile_x
@@ -154,9 +172,9 @@ def CheckTile(tile_x, tile_y, config=None):
                 and item.Visible
                 and item.Name != "nodraw"
             ):
-                return False  # Tile is blocked by an item
+                return False  # tile is blocked by an item
 
-    # Filter to get all mobiles
+    # filter to get all mobiles
     if config.get("mobiles_filter", {}).get("Enabled"):
         mobiles_filter = Mobiles.Filter()
         mobiles_filter.Enabled = True
@@ -170,7 +188,7 @@ def CheckTile(tile_x, tile_y, config=None):
             ):
                 return False  # Tile is blocked by a mobile
 
-    # Check for statics and houses on the tile
+    # check for statics and houses on the tile
     if config.get("search_statics", False):
         static_land = Statics.GetLandID(tile_x, tile_y, Player.Map)
         if Statics.GetLandFlag(static_land, flag_name):
@@ -187,7 +205,7 @@ def CheckTile(tile_x, tile_y, config=None):
         if is_blocked_by_house:
             return False  # Tile is blocked by a house
 
-    # Tile is passable because it's not blocked
+    # tile is passable because it's not blocked
     return True
 
 

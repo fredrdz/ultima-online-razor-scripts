@@ -29,7 +29,7 @@ def FindTrashBarrel():
     trashBarrelFilter = Items.Filter()
     trashBarrelFilter.OnGround = 1
     trashBarrelFilter.Movable = False
-    trashBarrelFilter.RangeMax = 0
+    trashBarrelFilter.RangeMin = 0
     trashBarrelFilter.RangeMax = 2
     trashBarrelFilter.Graphics = List[Int32]([containers["trash barrel"].itemID])
     trashBarrelFilter.Hues = List[Int32]([containers["trash barrel"].color])
@@ -52,7 +52,7 @@ def FindHatch():
     hatchFilter = Items.Filter()
     hatchFilter.OnGround = 1
     hatchFilter.Movable = False
-    hatchFilter.RangeMax = 0
+    hatchFilter.RangeMin = 0
     hatchFilter.RangeMax = 2
     hatchFilter.Graphics = List[Int32]([containers["hatch"].itemID])
 

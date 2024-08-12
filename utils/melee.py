@@ -50,7 +50,7 @@ def PhysicalAttack(enemySerial=-1):
 
     # find items
     bandages = FindBandage(Player.Backpack)
-    weapon = FindItem(0x0F4D, Player.Backpack)
+    weapon = FindItem(0x1439, Player.Backpack)
     shield = FindItem(0x1B76, Player.Backpack)
     mana_pot = FindItem(potions["greater mana potion"].itemID, Player.Backpack)
 

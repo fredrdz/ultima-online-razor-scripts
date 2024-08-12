@@ -11,6 +11,7 @@ import math
 import time
 import random
 from System.Collections.Generic import List
+from System import Int32
 from System import Byte
 
 # custom RE packages
@@ -22,12 +23,10 @@ from utils.pathing import (
     IsPosition,
     PathCount,
     PlayerDiagonalOffset,
-    RazorPathing,
 )
 from utils.actions import Chat_on_position, Audio_say
 from utils.item_actions.common import (
     unequip_hands,
-    equip_left_hand,
     RecallNext,
     RecallBank,
 )
@@ -37,44 +36,59 @@ from utils.gumps import is_afk_gump, get_afk_gump_button_options, solve_afk_gump
 
 
 # ********************
+
 # Tiles where there is no longer enough ore to be harvested will not be revisited until this much time has passed
-mineCooldown = 1200000  # 1,200,000 ms is 20 minutes
+mineCooldown = 300000  # 5 minutes
 
 # Want this script to alert you for GM or prompts?
 alert = True
+
 # Want this script to run away from bad guys?
 runaway = True
 
-# setting a secure container will disable bank restocking
-# will restock from here instead
-secureContainer = None
+# Stealth mining? Will use stealth skill to hide while mining if true
+stealth = True
 
-containerInBank = 0x40054709  # Serial of log bag in bank
+# restock/deposit container:
+# house or bank, only one can be set
+# setting a house container will override bank functions; won't call "bank" or use bank rune
+# set the one not in use to: None
+# if both are set, house will be used
+containerInHouse = 0x4011E131
+containerInBank = None
+
+# use ".where" chat command to find bank coordinates
+# the player will chat "bank" only on these coordinates
+# only used if a container in bank is set
+# vesper bank
 bankX = 2891
 bankY = 675
 
-
-# slot number in runebook, 1 of 16
-runebookSerial = Misc.CheckSharedValue("mining_runebook")
+# runebook used for traveling to house or bank and mining locations
+runebookSerial = 0x4003835F
+# slot number in runebook; use from 1 to 16
+# 1 = first rune, 16 = last rune
+# as mentioned above, only one of the two will be used depending on container
 houseRune = 1
 bankRune = 2
 
-# Define constants for the minimum and maximum values of tree_rune
+# these set the runebook slot ranges w/ mining locations
+# the MIN_RUNE should be the first mining location and the MAX_RUNE the last
 MIN_RUNE = 3
-MAX_RUNE = 11
-CURRENT_RUNE = 3
+MAX_RUNE = 9
+# CURRENT_RUNE should be the first mining location to start there
+CURRENT_RUNE = MIN_RUNE
+
 # ********************
 
 # Parameters
 # more than 25 tiles of scanning may crash client
 scanRadius = 25
 
-weightLimit = Player.MaxWeight + 30
+weightLimit = Player.MaxWeight + 20
 
-toolIDs = [0x0F49, 0x13FB, 0x0F47, 0x1443, 0x0F45, 0x0F4B, 0x0F43]
-
-oreID = 0x1BDD
-ingotID = 0x1BD7
+toolIDs = [0x0E86, 0x0F39]  # pickaxe, shovel
+ingotID = 0x1BEF
 goldID = 0x0EED
 
 # triplet; (itemID, color, count)
@@ -84,7 +98,6 @@ goldID = 0x0EED
 # anyAmount = -1
 depositItems = [
     (ingotID, -1, -1),
-    (oreID, -1, -1),
     (goldID, -1),
 ]
 
@@ -103,65 +116,110 @@ class Tile:
 # init
 caveTiles = []
 humanIgnoreList = []
-Timer.Create("tracking_cd", 1)
 playerBag = Player.Backpack.Serial
 
-# check for runebook
-if not runebookSerial:
-    runebookSerial = Target.PromptTarget(">> target your runebook", colors["notice"])
+# ---
+# validate runebook
+if not runebookSerial or not isinstance(runebookSerial, int):
+    Misc.SendMessage(">> no runebook serial set", colors["fatal"])
+    sys.exit()
 
-# check what type of restock container we're using;
-# only one instance of secureContainer or containerInBank may exist;
-# not both; one will be set to None
-if secureContainer is not None:
-    # secure container was specified; use it
-    restockContainer = secureContainer
-    containerInBank = None
-elif containerInBank is not None:
-    # container in bank was specified; use it
-    restockContainer = containerInBank
+# validate house rune
+if not houseRune or not isinstance(houseRune, int):
+    # checks if number is within range: 1-16
+    if not 1 <= houseRune <= 16:
+        Misc.SendMessage(">> no house rune set", colors["warning"])
+        Misc.SendMessage(">> setting house rune to runebook slot 1", colors["warning"])
+        houseRune = 1
+
+# validate bank rune
+if not bankRune or not isinstance(bankRune, int):
+    # checks if number is within range: 1-16
+    if not 1 <= houseRune <= 16:
+        Misc.SendMessage(">> no bank rune set", colors["warning"])
+        Misc.SendMessage(">> setting bank rune to runebook slot 2", colors["warning"])
+        bankRune = 2
+
+# ---
+# validate/set transfers container and transfers rune
+if isinstance(containerInHouse, int):
+    # use house
+    transfersContainer = containerInHouse
+    transfersRune = houseRune
+    transfersType = "house"
+elif isinstance(containerInBank, int):
+    # use bank
+    transfersContainer = containerInBank
+    transfersRune = bankRune
+    transfersType = "bank"
 else:
-    # no container was specified; prompt for one
-    restockContainer = Target.PromptTarget(
-        ">> target your restocking container", colors["notice"]
-    )
-    containerAsItem = Items.FindBySerial(restockContainer)
-    # check if container is in bank
-    if containerAsItem.IsInBank is False:
-        Misc.SendMessage(f">> {containerAsItem.Name} was not in bank", colors["status"])
-        secureContainer = restockContainer
-        containerInBank = None
-    else:
-        Misc.SendMessage(f">> {containerAsItem.Name} was in bank", colors["status"])
-        containerInBank = restockContainer
-        secureContainer = None
+    Misc.SendMessage(">> no valid transfers container set", colors["fatal"])
+    Misc.SendMessage(">> set either house or bank container", colors["fatal"])
+    sys.exit()
+# ---
 
 caveStatics = [
-    0x0C95,
+    # cave floor
+    0x053A,
+    0x053B,
+    0x053C,
+    0x053D,
+    0x053E,
+    0x053F,
+    0x0540,
+    0x0541,
+    0x0542,
+    0x0543,
+    0x0544,
+    0x0545,
+    0x0546,
+    0x0547,
+    0x0548,
+    0x0549,
+    0x054A,
+    0x054B,
+    0x054C,
+    0x054D,
+    0x054E,
+    0x054F,
 ]
 
 
 # ---------------------------------------------------------------------
-def Bank(runebook, rune, x=0, y=0):
-    # recall to bank if not close
-    if PathCount(x, y) > 20:
-        RecallBank(runebook, rune)
-        Misc.Pause(2000)
+def Deposit(itemList, dst, src=Player.Backpack.Serial):
+    # validations
+    if not itemList:
+        Misc.SendMessage(">> no items set for deposit", colors["fatal"])
+        return
 
-    # pathfind to bank if not at bank calling coordinates
-    while IsPosition(x, y) is False:
-        Misc.Pause(100)
-        if RazorPathing(x, y) is False:
-            if Misc.ScriptStatus("pathfinding.py") is False:
-                Misc.SetSharedValue("pathFindingOverride", (x, y))
-                Misc.ScriptRun("pathfinding.py")
-                Misc.Pause(1000)
+    if dst is None or not isinstance(dst, int):
+        Misc.SendMessage(">> no destination container specified", colors["fatal"])
+        return
 
-    # use bank via chat; only does it if on bank coordinates
-    Chat_on_position("bank", (x, y))
+    # get container as an item class
+    containerItem = Items.FindBySerial(dst)
+    if not containerItem:
+        Misc.SendMessage(">> deposit container not found", colors["fatal"])
+        PlayerHideAndExit()
+
+    # open the container to load contents into memory
+    if containerItem.IsContainer:
+        Items.UseItem(containerItem)
+
+    # init
+    Journal.Clear()
+
+    # deposit items in container
+    MoveItemsByCount(itemList, src, dst)
+
+    # fatal error if container is full
+    if Journal.SearchByType("That container cannot hold more weight.", "System"):
+        Misc.SendMessage(">> container is full", colors["fatal"])
+        PlayerHideAndExit()
 
 
 def Restock(itemList, src, dst=Player.Backpack.Serial):
+    # validations
     if not itemList:
         Misc.SendMessage(">> no items requested for restock", colors["fatal"])
         return False
@@ -170,6 +228,17 @@ def Restock(itemList, src, dst=Player.Backpack.Serial):
         Misc.SendMessage(">> no source container specified", colors["fatal"])
         return False
 
+    # get container as an item class
+    containerItem = Items.FindBySerial(src)
+    if not containerItem:
+        Misc.SendMessage(">> restock container not found", colors["fatal"])
+        PlayerHideAndExit()
+
+    # open the container to load contents into memory
+    if containerItem.IsContainer:
+        Items.UseItem(containerItem)
+
+    # check if enough to restock and calculate difference
     difference = []
     for id, required_count in itemList:
         src_count = Items.ContainerCount(src, id)
@@ -180,50 +249,28 @@ def Restock(itemList, src, dst=Player.Backpack.Serial):
         if dst_count < required_count:
             difference.append((id, required_count - dst_count))
 
+    # if no difference, then no items need restocking
     if not difference:
         Misc.SendMessage(">> no items need restocking", colors["success"])
         return True
 
+    # restock items to destination
     MoveItemsByCount(difference, src, dst)
+
     return True
 
 
-def DepositAndRestock(runebook, rune, x=0, y=0):
-    # init
-    Journal.Clear()
-
-    # use bank if enabled
-    if containerInBank is not None:
-        Bank(runebook, rune, x, y)
-
-    # get container as an item class
-    containerItem = Items.FindBySerial(restockContainer)
-    if not containerItem:
-        Misc.SendMessage(">> restocking container not found", colors["fatal"])
-        PlayerHideAndExit()
-
-    # some chopping if logs in player bag
-    while Items.BackpackCount(oreID) > 0:
-        Smelt()
-
-    # open the container to load contents into memory
-    if containerItem.IsContainer:
-        Items.UseItem(containerItem)
-
-    # deposit items in container
-    MoveItemsByCount(depositItems, playerBag, restockContainer)
-
-    # fatal error if container is full
-    if Journal.SearchByType("That container cannot hold more weight.", "System"):
-        Misc.SendMessage(">> container is full", colors["fatal"])
-        PlayerHideAndExit()
+def DepositAndRestock():
+    # deposit
+    Deposit(depositItems, transfersContainer, playerBag)
 
     # restock
     recallSpell = spellReagents.get("Recall", [])
     restockItems = []
     for reg in recallSpell:
         restockItems.append((reg.itemID, 10))
-    if Restock(restockItems, restockContainer) is False:
+
+    if Restock(restockItems, transfersContainer, playerBag) is False:
         Misc.SendMessage(">> failed to restock necessary items", colors["fatal"])
         PlayerHideAndExit()
 
@@ -268,131 +315,203 @@ def ScanStatic(tiles=List[Tile]) -> List[Tile]:
 
     tiles.extend(new_tiles)
 
-    Misc.SendMessage(">> total trees: %i" % len(tiles), colors["success"])
+    Misc.SendMessage(">> total tiles: %i" % len(tiles), colors["success"])
     return tiles
 
 
 # ---------------------------------------------------------------------
-def MoveToTile():
-    if not caveTiles or len(caveTiles) == 0:
+def MoveToTile(tX, tY, offset=False):
+    # if tx or tY are not ints or valid coordinates, return false
+    if not isinstance(tX, int) or not isinstance(tY, int):
         return False
-
-    tX = caveTiles[0].x
-    tY = caveTiles[0].y
 
     if PathCount(tX, tY) > 50:
         Misc.SendMessage(f">> tile too far away: {tX}, {tY}", colors["warning"])
         return False
 
+    path_config = {
+        "search_statics": False,
+        "player_house_filter": True,
+        "items_filter": {
+            "Enabled": True,
+        },
+        "mobiles_filter": {
+            "Enabled": True,
+        },
+    }
+
+    # offset player position by 1 if offset is true
+    if offset:
+        tX, tY = PlayerDiagonalOffset(tX, tY, path_config)
+
     Misc.SendMessage(f">> moving to tile: {tX}, {tY}", colors["status"])
-
-    actionOffset = PlayerDiagonalOffset(tX, tY)
-    if not actionOffset:
-        return False
-
-    actionX, actionY = actionOffset
-    if RazorPathing(actionX, actionY) is False:
-        Misc.SetSharedValue("pathFindingOverride", (actionX, actionY))
-        Misc.ScriptRun("pathfinding.py")
+    Misc.SetSharedValue("pathFindingOverride", (tX, tY))
+    Misc.SetSharedValue("pathFindingConfig", path_config)
+    Misc.ScriptRun("pathfinding.py")
 
     # init timeouts
     Timer.Create("pathing", 10000)
     Timer.Create("safteyNet", 1)
 
-    # wait for position to be reached until t/o
-    while IsPosition(actionX, actionY) is False and Timer.Check("pathing") is True:
+    # wait while pathfinding script is running or until t/o
+    while Misc.ScriptStatus("pathfinding.py") is True:
         Misc.Pause(random.randint(50, 150))
         if Timer.Check("safteyNet") is False:
             SafetyNet()
             Timer.Create("safteyNet", 1000)
-
-    # if pathfinding script is still running after t/o, stop it
-    if Timer.Check("pathing") is False:
-        if Misc.ScriptStatus("pathfinding.py"):
+        elif Timer.Check("pathing") is False:
+            Misc.SendMessage(">> pathing timed out", colors["fail"])
             Misc.ScriptStop("pathfinding.py")
+            return False
+
+    # check if we reached the tile
+    if IsPosition(tX, tY) is False:
         Misc.SendMessage(">> pathlocked, resetting", colors["error"])
-        Misc.SendMessage(f">> failed to reach tile: {tX}, {tY}", colors["error"])
+        Misc.SendMessage(f">> failed to reach tile: {tX}, {tY}", colors["fail"])
         return False
 
-    # if here, we succeeded in reaching the tree
+    # if here, we succeeded in reaching the tile
     Misc.SendMessage(f">> reached tile: {tX}, {tY}", colors["notice"])
     return True
 
 
 # ---------------------------------------------------------------------
-def Smelt():
-    EquipTool()
+def FindForge(radius=10):
+    """
+    Locates a forge within reach.
+    """
+
+    forgeFilter = Items.Filter()
+    forgeFilter.OnGround = 1
+    forgeFilter.Movable = False
+    forgeFilter.RangeMin = 0
+    forgeFilter.RangeMax = radius
+    forgeFilter.Graphics = List[Int32]([0x0FB1, 0x197E, 0x199E, 0x19A2, 0x197A])
+
+    forge = Items.ApplyFilter(forgeFilter)
+
+    if len(forge) >= 1:
+        return forge[0]
+
+    return None
+
+
+def FindTool(tools=List[int]):
+    # if tools are found in the backpack, return the first tool
     for item in Player.Backpack.Contains:
-        if item.ItemID == oreID:
-            Items.UseItem(Player.GetItemOnLayer("LeftHand"))
-            Target.WaitForTarget(1000, False)
-            Target.TargetExecute(item)
-            Misc.Pause(300)
+        if item.ItemID in tools:
+            return item
 
-
-def EquipTool():
+    # check if holding a tool in hands
     if Player.CheckLayer("RightHand"):
         unequip_hands()
     elif Player.CheckLayer("LeftHand"):
-        if Player.GetItemOnLayer("LeftHand").ItemID not in toolIDs:
+        if Player.GetItemOnLayer("LeftHand").ItemID not in tools:
             unequip_hands()
 
     if not Player.CheckLayer("LeftHand"):
         for item in Player.Backpack.Contains:
-            if item.ItemID in toolIDs:
-                equip_left_hand(item.Serial)
-                break
+            if item.ItemID in tools:
+                return item
         if not Player.CheckLayer("LeftHand"):
-            Misc.SendMessage(">> no tools found", colors["fatal"])
-            Misc.Beep()
-            PlayerHideAndExit()
+            return None
 
 
-def Mine():
+def HaveOres():
+    # init
+    ores = [0x19B9, 0x19B7, 0x19BA, 0x19B8]
+
+    for ore in ores:
+        if Items.BackpackCount(ore) > 0:
+            return True
+
+    return False
+
+
+def Smelt(forge):
+    # init
+    Timer.Create("smelt_timeout", 10000)
+
+    # validate
+    if not forge:
+        return
+
+    # if forge within 3 tiles, smelt ores
+    if PathCount(forge.Position.X, forge.Position.Y) <= 4:
+        Misc.SendMessage(">> smelting ores...", colors["status"])
+        ores = [0x19B9, 0x19B7, 0x19BA, 0x19B8]
+        for ore in ores:
+            while Items.BackpackCount(ore) > 0:
+                Items.UseItemByID(ore)
+                Misc.Pause(500)
+                # infinte loop check
+                if Timer.Check("smelt_timeout") is False:
+                    Misc.SendMessage(">> smelting timed out", colors["error"])
+                    return
+
+
+def Mine(count=0):
+    # use stealth if enabled
+    if stealth and Player.Visible:
+        Player.UseSkill("Stealth", False)
+        Misc.Pause(2000)
+
+    # check for target cursor, cancel if found
     if Target.HasTarget():
         Misc.SendMessage(">> detected target cursor, refreshing...", colors["warning"])
         Target.Cancel()
         Misc.Pause(500)
 
+    # mining func is recursive, so we check between attempts
     if Overweight(weightLimit):
         return
 
+    # check if we are stuck in an infinite loop
+    if count > 10:
+        Misc.SendMessage(">> stuck in loop; resetting", colors["warning"])
+        return
+
+    # init
     Journal.Clear()
 
-    EquipTool()
-    Items.UseItem(Player.GetItemOnLayer("LeftHand"))
+    # find mining tool; hide and stop script if none
+    tool = FindTool(toolIDs)
+    if not tool:
+        Misc.SendMessage(">> no tools found", colors["fatal"])
+        Misc.Beep()
+        PlayerHideAndExit()
+
+    # use tool to mine cave tile
+    Items.UseItem(tool.Serial)
     Target.WaitForTarget(3000, True)
     Target.TargetExecute(
         caveTiles[0].x, caveTiles[0].y, caveTiles[0].z, caveTiles[0].id
     )
 
     # init timers
-    Timer.Create("chop_timeout", 10000)
+    Timer.Create("mine_timeout", 10000)
     Timer.Create("safteyNet", 1)
 
-    # wait for tree to be chopped until t/o
+    # wait for tile to be mined until t/o
     while not (
-        Journal.SearchByType(
-            "You hack at the tree for a while, but fail to produce any useable wood.",
-            "System",
-        )
-        or Journal.SearchByType("You chop some", "System")
-        or Journal.SearchByType("There's not enough wood here to harvest.", "System")
-        or Journal.Search("Target cannot be seen")
-        or Journal.Search("That is too far away")
-        or not Timer.Check("chop_timeout")
+        Journal.SearchByType("You dig some", "System")  # success
+        or Journal.SearchByType("You loosen some", "System")  # fail
+        or Journal.SearchByType("There is no metal", "System")  # done
+        or Journal.Search("Target cannot be seen")  # error1
+        or Journal.Search("That is too far away")  # error2
+        or not Timer.Check("mine_timeout")
     ):
         Misc.Pause(100)
 
-    # safteyNet runs every second in between chops
+    # safteyNet runs every second in between swings
     if Timer.Check("safteyNet") is False:
         SafetyNet()
         Timer.Create("safteyNet", 1000)
 
-    # if here, we are not chopping, so we do checks
-    if Journal.SearchByType("There's not enough wood here to harvest.", "System"):
-        Misc.SendMessage(">> no wood here", colors["status"])
-        Misc.SendMessage(">> tree change", colors["status"])
+    # if here, we are not mining, so we do checks
+    if Journal.SearchByType("There is no metal", "System"):
+        Misc.SendMessage(">> no ore here", colors["status"])
+        Misc.SendMessage(">> tile change", colors["status"])
         Timer.Create("%i,%i" % (caveTiles[0].x, caveTiles[0].y), mineCooldown)
     elif Journal.Search("That is too far away"):
         Misc.SendMessage(">> blocked; cannot target", colors["warning"])
@@ -400,23 +519,15 @@ def Mine():
     elif Journal.Search("Target cannot be seen"):
         Misc.SendMessage(">> blocked; cannot target", colors["warning"])
         Timer.Create("%i,%i" % (caveTiles[0].x, caveTiles[0].y), mineCooldown)
-    elif Timer.Check("chop_timeout") is False:
-        Misc.SendMessage(">> tree change", colors["status"])
+    elif Timer.Check("mine_timeout") is False:
+        Misc.SendMessage(">> tile change", colors["status"])
         Timer.Create("%i,%i" % (caveTiles[0].x, caveTiles[0].y), mineCooldown)
-    elif Journal.Search("bloodwood"):
-        Misc.SendMessage(">> bloodwood!", colors["status"])
-        Timer.Create("chop_timeout", 10000)
-        Mine()
-    elif Journal.Search("heartwood"):
-        Misc.SendMessage(">> heartwood!", colors["status"])
-        Timer.Create("chop_timeout", 10000)
-        Mine()
-    elif Journal.Search("frostwood"):
-        Misc.SendMessage(">> frostwood!", colors["status"])
-        Timer.Create("chop_timeout", 10000)
+    elif Journal.Search("sapphire"):
+        Misc.SendMessage(">> sapphire!", colors["status"])
+        Timer.Create("mine_timeout", 10000)
         Mine()
     else:
-        Mine()
+        Mine(count + 1)
 
 
 # ---------------------------------------------------------------------
@@ -424,8 +535,9 @@ def Mine():
 
 enemyFilter = Mobiles.Filter()
 enemyFilter.Enabled = True
-enemyFilter.RangeMin = -1
-enemyFilter.RangeMax = -1
+enemyFilter.RangeMin = 0
+enemyFilter.RangeMax = 30
+enemyFilter.CheckLineOfSight = True
 enemyFilter.Poisoned = -1
 enemyFilter.IsHuman = -1
 enemyFilter.IsGhost = False
@@ -474,12 +586,11 @@ def IsPlayer() -> bool:
 
     # add human NPCs to ignore list or return true if player
     if len(humans) > 0:
-        for i in range(len(humans) - 1, -1, -1):
-            h = humans[i]
-            if h.Serial not in humanIgnoreList:
+        for human in humans:
+            if human.Serial not in humanIgnoreList:
                 Misc.SendMessage(">> human nearby <<", colors["alert"])
-                # tracking skill used to confirm if player
                 Misc.SendMessage(">> checking if player...", colors["alert"])
+                # tracking skill used to confirm if player
                 Player.UseSkill("Tracking", False)
                 Gumps.WaitForGump(2976808305, 2000)
                 # button 4 for checking for players
@@ -496,8 +607,12 @@ def IsPlayer() -> bool:
                                 Misc.SendMessage(f"-- {player}", colors["alert"])
                             Gumps.CloseGump(993494147)
                             return True
-                    else:
-                        humanIgnoreList.append(h.Serial)
+            if human.Serial not in humanIgnoreList:
+                # add to ignore list if not player
+                Misc.SendMessage(f">> {human.Name} is not a player", colors["debug"])
+                Misc.SendMessage(">> adding to ignore list", colors["debug"])
+                humanIgnoreList.append(human.Serial)
+                Misc.Pause(1000)  # skill wait
     return False
 
 
@@ -545,19 +660,23 @@ def SafetyNet():
                 Misc.SendMessage(">> invul near:" + invul.Name, colors["alert"])
             sys.exit()
 
-    # close any gumps that may be opened to avoid issues
-    if Gumps.HasGump():
-        opened_gump_id = Gumps.CurrentGump()
-        Gumps.CloseGump(opened_gump_id)
+    # close gumps that may be opened to avoid issues
+    if Gumps.CurrentGump() == 0xB16E7D71:
+        Gumps.CloseGump(0xB16E7D71)  # tracking gump
+    if Gumps.CurrentGump() == 0x554B87F3:
+        Gumps.CloseGump(0x554B87F3)  # runebook gump
 
 
 # ---------------------------------------------------------------------
-# main process
 Misc.SendMessage(">> mining script starting...", colors["notice"])
-DepositAndRestock(runebookSerial, bankRune, bankX, bankY)
-CURRENT_RUNE = RecallNext(runebookSerial, CURRENT_RUNE, MIN_RUNE, MAX_RUNE)
+# deposit/restock if tranfers container is nearby
+if Items.FindBySerial(transfersContainer):
+    Items.UseItem(transfersContainer)
+    DepositAndRestock()
 
+# main process loop
 while not Player.IsGhost:
+    SafetyNet()
     Misc.Pause(100)
     caveTiles = ScanStatic(caveTiles)
 
@@ -568,11 +687,31 @@ while not Player.IsGhost:
         continue
 
     while len(caveTiles) > 0:
+        if Overweight(weightLimit) and HaveOres():
+            Misc.SendMessage(">> overweight w/ ores", colors["warning"])
+            forge = FindForge(20)
+            if forge:
+                MoveToTile(forge.Position.X, forge.Position.Y, True)
+                Smelt(forge)
         if Overweight(weightLimit):
-            DepositAndRestock(runebookSerial, bankRune, bankX, bankY)
+            Misc.SendMessage(">> overweight, going to deposit", colors["warning"])
+            # use runebook to recall close to deposit/restock location
+            RecallBank(runebookSerial, transfersRune)
+            Misc.Pause(3000)  # wait a bit to let things load
+            # banking if enabled; moves to position and chats "bank"
+            if transfersType == "bank":
+                if MoveToTile(bankX, bankY):
+                    Chat_on_position("bank", (bankX, bankY))
+            # smelt ores before deposit if forge is nearby
+            forge = FindForge(20)
+            if forge:
+                Smelt(forge)
+            # deposit ingots and restock recall regs
+            DepositAndRestock()
+            # go to next mining location
             CURRENT_RUNE = RecallNext(runebookSerial, CURRENT_RUNE, MIN_RUNE, MAX_RUNE)
             break
-        if MoveToTile():
+        if MoveToTile(caveTiles[0].x, caveTiles[0].y):
             Mine()
         caveTiles.pop(0)
         caveTiles.sort(

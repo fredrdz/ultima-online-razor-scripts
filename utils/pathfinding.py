@@ -14,18 +14,10 @@ from glossary.colors import colors
 # *********************************************************************
 # Edit the following variables to suit your needs
 
-# script flags
-config = {
-    "search_statics": True,
-    "player_house_filter": True,
-    "items_filter": {"Enabled": True},
-    "mobiles_filter": {"Enabled": True},
-}
-
 # script parameters
 max_iterations = 10000
 max_distance = 1000
-debug = 1
+debug = 0
 maxRetryIterations = 1
 retryIteration = 0
 shortPause = random.randint(50, 150)
@@ -63,7 +55,32 @@ class Node:
 
 # ---------------------------------------------------------------------
 # start of pathfinding logic
+
 # inits variables
+config = None
+
+# load config if available via shared values
+if Misc.CheckSharedValue("pathFindingConfig"):
+    config = Misc.ReadSharedValue("pathFindingConfig")
+
+# default config
+default_config = {
+    "search_statics": True,  # look for blockable statics like trees, rocks (not blocked by sittable tree trunks) etc...
+    "player_house_filter": True,  # avoid player houses - make this False if you need to use inside a large open player house room without walls
+    "items_filter": {
+        "Enabled": True,  # look for items which may block the tile, chests, tables (but is also stopped by objects like chairs and cups) etc...
+    },
+    "mobiles_filter": {
+        "Enabled": True,  # look for MOBS which may block the tile (lambs, ancient dragons) etc...
+    },
+}
+
+# use default config if none else merge with provided config
+if not config:
+    config = default_config
+else:
+    # merge provided config with default config
+    config = {**default_config, **config}
 
 playerStartPosition = Player.Position
 goalPosition = Position(0, 0)
@@ -76,9 +93,9 @@ if Misc.CheckSharedValue("pathFindingOverride"):
     if goalPosition != overrideAsPosition:
         goalPosition = overrideAsPosition
         if debug > 0:
-            Misc.SendMessage(">> remote pathfinding request detected", colors["debug"])
+            Misc.SendMessage(">> pathing: request detected", colors["debug"])
             Misc.SendMessage(
-                f">> remote pathfinding request to {override[0],override[1]}",
+                f">> pathing: requested {override[0]}, {override[1]}",
                 colors["debug"],
             )
 
@@ -153,7 +170,7 @@ def a_star_pathfinding(
 
     heappush(open_nodes, start_node)
     if debug > 0:
-        Misc.SendMessage(">> pathfinding started...", colors["debug"])
+        Misc.SendMessage(">> pathing: started", colors["debug"])
 
     for i in range(max_iterations):
         if debug > 1:
@@ -180,7 +197,7 @@ def a_star_pathfinding(
                 path.append((current_node.x, current_node.y))
                 current_node = current_node.prev
             if debug > 0:
-                Misc.SendMessage(">> pathfinding completed", colors["debug"])
+                Misc.SendMessage(">> pathing: completed", colors["debug"])
             return path[::-1]
 
         for dx, dy in [
@@ -274,9 +291,9 @@ def move_player_along_path(path):
                 Player.Run(direction)
                 Misc.Pause(shortPause)
                 stuckCount += 1
-                Player.HeadMessage(42, "oops...thinking..!")
+                Player.HeadMessage(42, ">> pathing: processing...")
                 if stuckCount > 5:
-                    Player.HeadMessage(42, "I give up!")
+                    Player.HeadMessage(42, ">> pathing: terminated")
                     stop_moving = True
                     break
             elif (
@@ -294,9 +311,11 @@ if goalPosition == Position(0, 0):
 
 if check_tile(goalPosition.X, goalPosition.Y, items, mobiles):
     if debug > 0:
-        Misc.SendMessage(f">> pathfinding to: {goalPosition}", colors["debug"])
+        Misc.SendMessage(
+            f">> pathing: {goalPosition.X}, {goalPosition.Y}", colors["debug"]
+        )
     else:
-        Player.HeadMessage(42, "Thinking...")
+        Player.HeadMessage(42, "calculating...")
     path = a_star_pathfinding(Player.Position, goalPosition, check_tile)
 else:
     path = 0
@@ -305,16 +324,16 @@ if path == 0:
     if debug > 0:
         Misc.SendMessage(">> invalid Area", colors["debug"])
     else:
-        Player.HeadMessage(42, "That's inaccessible!")
+        Player.HeadMessage(42, "inaccessible...")
 elif not path:
     if debug > 0:
         Misc.SendMessage(">> no valid path found", colors["debug"])
         Misc.SendMessage(f">> failed after {max_iterations} attempts", colors["debug"])
     else:
-        Player.HeadMessage(42, "I can't figure out how to get there!")
+        Player.HeadMessage(42, "no path found...")
 else:
     if debug == 0:
-        Player.HeadMessage(42, "Here we go!")
+        Player.HeadMessage(42, "pathing...")
     for node in path:
         if debug > 1:
             Misc.SendMessage(f">> node in path: {node}", colors["debug"])
@@ -322,7 +341,7 @@ else:
 
 if Player.Position == goalPosition:
     if debug == 0:
-        Player.HeadMessage(42, "I have arrived!")
+        Player.HeadMessage(42, "arrived....")
     Misc.SendMessage(">> movement complete", colors["debug"])
 
 if Misc.CheckSharedValue("pathFindingOverride"):
